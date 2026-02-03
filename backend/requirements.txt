@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+langgraph
+langchain
+langchain-groq
+pymupdf      # Para OCR
+fpdf         # Para PDF Gen
+python-dotenv
