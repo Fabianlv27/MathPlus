@@ -1,0 +1,56 @@
+[
+    {
+        "ig": "Introducción al método",
+        "cont": [
+            {"type": "Latex", "cont": "15x^2 + 26xy + 8y^2", "x": 300, "y": 50, "status": "show"},
+            {"type": "Latex", "cont": "(3x+4y)(5x+2y)", "x": 300, "y": 150, "status": "hide"},
+            {"type": "Latex", "cont": "15x^2", "x": 200, "y": 250, "status": "hide"},
+            {"type": "Latex", "cont": "+ 6xy", "x": 280, "y": 250, "status": "hide"},
+            {"type": "Latex", "cont": "+ 20xy", "x": 360, "y": 250, "status": "hide"},
+            {"type": "Latex", "cont": "+ 8y^2", "x": 440, "y": 250, "status": "hide"},
+            {"type": "Latex", "cont": "= 15x^2 + 26xy + 8y^2", "x": 300, "y": 350, "status": "hide"}
+        ],
+        "insts": [
+            {"msg": "Nuestro objetivo será pasar de este polinomio desarrollado...", "tgs": []},
+            {"msg": "A esta forma factorizada. Veamos cómo se relacionan.", "tgs": [{"tg": "1", "ac": "appear"}]},
+            {"msg": "Si multiplicamos 3x por 5x...", "tgs": [{"tg": "2", "ac": "appear", "color": "#FCD34D"}]},
+            {"msg": "Obtenemos 15x al cuadrado.", "tgs": []},
+            {"msg": "Si multiplicamos 3x por 2y, obtenemos 6xy.", "tgs": [{"tg": "3", "ac": "appear", "color": "#FCD34D"}]},
+            {"msg": "Ahora, 4y por 5x nos da 20xy.", "tgs": [{"tg": "4", "ac": "appear", "color": "#FCD34D"}]},
+            {"msg": "Y finalmente 4y por 2y es 8y cuadrado.", "tgs": [{"tg": "5", "ac": "appear", "color": "#FCD34D"}]},
+            {"msg": "Al sumar todo, ¡volvemos al inicio!", "tgs": [{"tg": "6", "ac": "appear", "color": "#4ADE80"}]}
+        ]
+    },
+    {
+        "ig": "Resolviendo el Problema",
+        "cont": [
+            {"type": "Latex", "cont": "9y^2 + \\frac{25}{4}x^2z^2 + 15xyz", "x": 300, "y": 50, "status": "show"},
+            {"type": "Latex", "cont": "9y^2 + 15xyz + \\frac{25}{4}x^2z^2", "x": 300, "y": 120, "status": "hide"},
+            
+            {"type": "Latex", "cont": "3y", "x": 250, "y": 200, "status": "hide"},
+            {"type": "Latex", "cont": "3y", "x": 250, "y": 240, "status": "hide"},
+            
+            {"type": "Latex", "cont": "\\frac{5}{2}xz", "x": 350, "y": 200, "status": "hide"},
+            {"type": "Latex", "cont": "\\frac{5}{2}xz", "x": 350, "y": 240, "status": "hide"},
+            
+            {"type": "Flecha", "x": 270, "y": 210, "toX": 350, "toY": 240, "status": "hide"}, 
+            {"type": "Flecha", "x": 270, "y": 250, "toX": 350, "toY": 200, "status": "hide"},
+
+            {"type": "Latex", "cont": "\\frac{15}{2}xyz", "x": 450, "y": 220, "status": "hide"},
+            {"type": "Latex", "cont": "\\frac{15}{2}xyz", "x": 450, "y": 220, "status": "hide"}, 
+            
+            {"type": "Latex", "cont": "= 15xyz", "x": 550, "y": 220, "status": "hide"},
+            
+            {"type": "Latex", "cont": "(3y + \\frac{5}{2}xz)^2", "x": 300, "y": 350, "status": "hide"}
+        ],
+        "insts": [
+            {"msg": "Notamos que el polinomio está desordenado.", "tgs": []},
+            {"msg": "Ordenamos los términos por grado.", "tgs": [{"tg": "1", "ac": "appear"}]},
+            {"msg": "Descomponemos 9y cuadrado en 3y por 3y.", "tgs": [{"tg": "2", "ac": "appear"}, {"tg": "3", "ac": "appear"}]},
+            {"msg": "Y el término final en 5 medios de xz.", "tgs": [{"tg": "4", "ac": "appear"}, {"tg": "5", "ac": "appear"}]},
+            {"msg": "Multiplicamos en aspa...", "tgs": [{"tg": "6", "ac": "appear"}, {"tg": "7", "ac": "appear"}]},
+            {"msg": "La suma nos da el término central.", "tgs": [{"tg": "8", "ac": "appear"}, {"tg": "10", "ac": "appear"}]},
+            {"msg": "¡Es un trinomio cuadrado perfecto!", "tgs": [{"tg": "11", "ac": "appear", "color": "#4ADE80"}]}
+        ]
+    }
+]

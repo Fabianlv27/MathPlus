@@ -1,139 +1,163 @@
+// src/App.jsx
 import React, { useState } from 'react';
 import MathInput from './components/MathInput';
-import SolutionPlayer from './components/SolutionPlayer';
+// import SolutionPlayer from './components/SolutionPlayer';  <-- COMENTA ESTE
+import WhiteboardPlayer from './components/WhiteboardPlayer'; // <-- IMPORTA ESTE
 import { useMathTutor } from './hooks/useMathTutor';
 import { Upload, FileText } from 'lucide-react';
+
+// ... (Aquí iría el const WHITEBOARD_MOCK_DATA que te di arriba) ...
 
 function App() {
   const [latexInput, setLatexInput] = useState('');
   const [instructions, setInstructions] = useState('');
   const [file, setFile] = useState(null);
   
-const MOCK_DATA = {
-  "es_matematico": true,
-  "explicacion_general": "Simplificación de la fracción dada",
-  "pasos": [
-    {
-      "texto_voz": "Para simplificar la fracción dada, necesitamos encontrar y sacar el factor común tanto del numerador como del denominador.",
-      "latex_visible": "\\frac{2x^3+4x^2}{x^2+4x+4}",
-      "elementos_foco": ["numerador", "denominador"],
-      "accion_dom": "aparecer"
-    },
-    {
-      "texto_voz": "El numerador es $2x^3 + 4x^2$. Podemos factorizar $2x^2$ de ambos términos.",
-      "latex_visible": "2x^3 + 4x^2 = 2x^2(x + 2)",
-      "elementos_foco": ["2x^2"],
-      "accion_dom": "aparecer"
-    },
-    {
-      "texto_voz": "El denominador es $x^2 + 4x + 4$. Esto se puede factorizar como:",
-      "latex_visible": "x^2 + 4x + 4 = (x + 2)(x + 2) = (x + 2)^2",
-      "elementos_foco": ["(x + 2)"],
-      "accion_dom": "aparecer"
-    },
-    {
-      "texto_voz": "Ahora, reescribimos la fracción con los factores encontrados:",
-      "latex_visible": "\\frac{2x^3 + 4x^2}{x^2 + 4x + 4} = \\frac{2x^2(x + 2)}{(x + 2)^2}",
-      "elementos_foco": ["2x^2(x + 2)", "(x + 2)^2"],
-      "accion_dom": "aparecer"
-    },
-    {
-      "texto_voz": "Vemos que tanto el numerador como el denominador tienen el factor $(x + 2)$. Sin embargo, para cancelar factores comunes, debemos asegurarnos de que la cancelación sea válida.",
-      "latex_visible": "\\frac{2x^2(x + 2)}{(x + 2)^2} = \\frac{2x^2}{x + 2}",
-      "elementos_foco": ["(x + 2)"],
-      "accion_dom": "desaparecer"
-    }
-  ]
-};
+// src/App.jsx
 
+const WHITEBOARD_MOCK_DATA = [
+    {
+        "ig": "primero debemos saber que es el metodo de factorizacion por termino medio",
+        "cont": [
+            // [0] Polinomio Objetivo (300 - 50 = 250)
+            {"type": "Latex", "cont": "15x^2 + 26xy + 8y^2", "x": 250, "y": 100, "status": "show"},
+            
+            // [1] Factores
+            {"type": "Latex", "cont": "(3x+4y)(5x+2y)", "x": 250, "y": 200, "status": "hide"},
+            
+            // [2] Resultados parciales (Desplazados -50 respecto al anterior)
+            {"type": "Latex", "cont": "15x^2", "x": 130, "y": 300, "status": "hide"},
+            {"type": "Latex", "cont": "+6xy", "x": 210, "y": 300, "status": "hide"},
+            {"type": "Latex", "cont": "+20xy", "x": 290, "y": 300, "status": "hide"},
+            {"type": "Latex", "cont": "+8y^2", "x": 370, "y": 300, "status": "hide"},
+            
+            // [3] Resultado Final Sumado
+            {"type": "Latex", "cont": "= 15x^2 + 26xy + 8y^2", "x": 250, "y": 400, "status": "hide"}
+        ],
+        "insts": [
+            { "msg": "nuestro objetivo sera pasar un polinomio de esta forma", "tgs": [] },
+            { "msg": "a esta otra forma, para ello veremos como es que este valor se transforma al anterior", "tgs": [{"tg": "1:(0-f)", "ac": "appear"}] },
+            { "msg": "primero debemos multiplicar este factor", "tgs": [{"tg": "1:(0-6)", "ac": "resalt", "color": "#FCD34D"}] },
+            { "msg": "con este otro, aplicando la propiedad distributiva , que consiste en multiplicar cada termino de uno con el del otro", "tgs": [{"tg": "1:(7-f)", "ac": "resalt", "color": "#4ADE80"}] },
+            { "msg": "asi pues 3x por 5x da 15x al cuadrado", "tgs": [{"tg": "1:(1-2)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "1:(8-9)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "2:(0-f)", "ac": "appear"}], "fin":[2,3] },
+            { "msg": "3x por 2y es 6xy", "tgs": [{"tg": "1:(1-2)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "1:(11-12)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "3:(0-f)", "ac": "appear"}], "fin":[4] },
+            { "msg": "4y por 5x es 20xy", "tgs": [{"tg": "1:(4-5)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "1:(8-9)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "4:(0-f)", "ac": "appear"}], "fin":[5] },
+            { "msg": "4y por 2y es 8y al cuadrado", "tgs": [{"tg": "1:(4-5)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "1:(11-12)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "5:(0-f)", "ac": "appear"}], "fin":[6] },
+            { "msg": "Ahora si sumamos todo eso nos da este resultado, el cual es el mismo que teniamos originalmente", "tgs": [{"tg": "3:(0-f)", "ac": "appear"},{"tg":"0:(0-f)","ac":"resalt","color":""}], "fin":[7] },
+            { "msg": "Perfecto ahora sabemos que simplemente es buscar nuemeros que cumplan con este patron jugando un poco con los valores", "tgs": [] }
+        ]
+    },
+    {
+        "ig": "Ahora resolvamos nuestro problema",
+        "cont": [
+            // [0] Problema Desordenado (280 - 50 = 230)
+            {"type": "Latex", "cont": "9y^2+\\frac{25}{4}x^2z^2+15xyz", "x": 230, "y": 100, "status": "show"},
+            
+            // [1] Problema Ordenado
+            {"type": "Latex", "cont": "9y^2+15xyz+\\frac{25}{4}x^2z^2", "x": 230, "y": 170, "status": "hide"},
+
+            // --- COLUMNA IZQUIERDA (180 - 50 = 130) ---
+            // [2] 3y arriba
+            {"type": "Latex", "cont": "3y", "x": 230, "y": 250, "status": "hide"},
+            // [3] 3y abajo
+            {"type": "Latex", "cont": "3y", "x": 230, "y": 330, "status": "hide"},
+
+            // --- COLUMNA DERECHA (380 - 50 = 330) ---
+            // [4] 5/2xz arriba
+            {"type": "Latex", "cont": "\\frac{5}{2}xz", "x": 430, "y": 250, "status": "hide"},
+            // [5] 5/2xz abajo
+            {"type": "Latex", "cont": "\\frac{5}{2}xz", "x": 430, "y": 330, "status": "hide"},
+
+            // --- FLECHAS CRUZADAS (x: 230->180, toX: 380->330) ---
+            // [6] Flecha: Izq Arriba -> Der Abajo
+            {"type": "Flecha", "x": 280, "y": 280, "toX": 430, "toY": 360, "status": "hide"},
+            // [7] Flecha: Izq Abajo -> Der Arriba
+            {"type": "Flecha", "x": 280, "y": 350, "toX": 430, "toY": 280, "status": "hide"},
+
+            // --- RESULTADOS MULTIPLICACIÓN (480 - 50 = 430) ---
+            // [8] Resultado arriba
+            {"type": "Latex", "cont": "\\frac{15}{2}xyz", "x": 530, "y": 270, "status": "hide"},
+            // [9] Resultado abajo
+            {"type": "Latex", "cont": "\\frac{15}{2}xyz", "x": 530, "y": 310, "status": "hide"},
+            
+            // [10] Suma central comprobación (557 - 50 = 507)
+            {"type": "Latex", "cont": "= 15xyz", "x": 607, "y": 290, "status": "hide"},
+
+            // [11] Marco para agrupar Fila 1 (x1: 170->120, x2: 440->390)
+            {"type": "Marco", "x1": 220, "x2": 490, "y1": 250, "y2": 300, "status": "hide"}, 
+            // [12] Marco para agrupar Fila 2
+            {"type": "Marco", "x1": 220, "x2": 490, "y1": 330, "y2": 380, "status": "hide"},
+            
+            // [13] Copia de factores (100 - 50 = 50)
+             {"type": "Latex", "cont": "(3y+\\frac{5}{2}xz)(3y+\\frac{5}{2}xz)", "x": 150, "y": 410, "status": "hide"},
+            // [14] Resultado Final (380 - 50 = 330)
+            {"type": "Latex", "cont": "=(3y+\\frac{5}{2}xz)^2", "x": 430, "y": 410, "status": "hide"}
+        ],
+        "insts": [
+            { "msg": "Si lo comparamos con el modelo anterior notaremos que no esta en orden...", "tgs": [{"tg": "0:(5-f)", "ac": "resalt", "color": "#EF4444"}] },
+
+            { "msg": "esta es la forma correcta por la que debemos empezar", "tgs": [{"tg": "1:(0-f)", "ac": "appear"}] },
+
+            { "msg": "descomponemos el primer termino de la forma 3y por 3y", "tgs": [{"tg": "1:(0-3)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "2:(0-f)", "ac": "appear"}, {"tg": "3:(0-f)", "ac": "appear"}] },
+
+            { "msg": "descomponemos el segundo termino de la forma 5 medios xz por 5 medios xz...", "tgs": [{"tg": "1:(11-f)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "4:(0-f)", "ac": "appear"}, {"tg": "5:(0-f)", "ac": "appear"}], "fin":[2] },
+
+            { "msg": "ahora si multiplicamos estos dos extremos nos da 15 medios xyz", "tgs": [{"tg": "2:(0-f)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "5:(0-f)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "6:(0-f)", "ac": "appear"}, {"tg": "8:(0-f)", "ac": "appear"}], "fin":[3] },
+
+            { "msg": "y multiplicando estos dos tambien nos da 15 medios xyz", "tgs": [{"tg": "3:(0-f)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "4:(0-f)", "ac": "resalt", "color": "#FCD34D"}, {"tg": "7:(0-f)", "ac": "appear"}, {"tg": "9:(0-f)", "ac": "appear"}],"fin":[4] },
+            { "msg": "ahora si sumamos ambos productos vemos que efectivamente nos da el termino del medio", "tgs": [{"tg": "10:(0-f)", "ac": "appear"}, {"tg": "1:(5-10)", "ac": "resalt", "color": "#4ADE80"}], "fin":[5] },
+            { "msg": "Bien ahora agrupamos los que seran nuestros factores , agarrando los extremos", "tgs": [{"tg": "11:(0-f)", "ac": "appear"}, {"tg": "12:(0-f)", "ac": "appear"}, {"tg": "13:(0-f)", "ac": "appear"}], "fin":[6] }, 
+            { "msg": "nos damos cuenta que se trata de un binomio al cuadrado...", "tgs": [{"tg": "14:(0-f)", "ac": "appear", "color": "#4ADE80"}] }
+        ]
+    }
+];
+  // Usamos el hook para la lógica de API (opcional por ahora si usas Mock)
   const { 
     solveProblem, 
     loading, 
-    solution, 
-    currentStep, 
-    isPlaying, 
-    togglePlay, 
-    setCurrentStep 
+    solution 
   } = useMathTutor();
 
   const handleSubmit = () => {
-    if (!latexInput && !file && !instructions) return;
-    solveProblem(latexInput, instructions, file);
-  
+    // Si quieres probar el backend real, descomenta esto:
+    // solveProblem(latexInput, instructions, file);
+    
+    // Por ahora, solo simulación visual:
+    console.log("Simulando resolución...");
   };
 
   return (
     <div className="min-h-screen bg-slate-100 p-8 font-sans">
       <header className="max-w-6xl mx-auto mb-8">
-        <h1 className="text-4xl font-extrabold text-indigo-900">AI Math Tutor <span className="text-blue-500">.mvp</span></h1>
-        <p className="text-slate-500">Tu profesor particular interactivo potenciado por Groq</p>
+        <h1 className="text-4xl font-extrabold text-indigo-900">MathPlus <span className="text-amber-500">Whiteboard</span></h1>
       </header>
 
       <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* COLUMNA IZQUIERDA: INPUTS */}
         <div className="lg:col-span-4 space-y-6">
-            
-          {/* Tarjeta de Input */}
           <div className="bg-white p-6 rounded-xl shadow-md space-y-4">
-            <h3 className="font-bold text-lg text-slate-700 flex items-center gap-2">
-                <FileText size={20}/> Entrada del Problema
-            </h3>
-            
-            {/* Input GeoGebra Style */}
-            <MathInput value={latexInput} onChange={setLatexInput} />
-            
-            {/* Instrucciones extra */}
-            <div>
-                <label className="text-sm text-gray-500 font-bold">Instrucciones extra:</label>
-                <textarea 
-                    className="w-full border rounded-lg p-2 mt-1 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                    placeholder="Ej: Explícamelo como si tuviera 10 años..."
-                    rows={3}
-                    value={instructions}
-                    onChange={(e) => setInstructions(e.target.value)}
-                />
-            </div>
-
-            {/* Subida de Archivo */}
-            <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:bg-slate-50 transition cursor-pointer relative">
-                <input 
-                    type="file" 
-                    accept=".pdf" 
-                    onChange={(e) => setFile(e.target.files[0])}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-                <div className="flex flex-col items-center text-slate-500">
-                    <Upload size={24} className="mb-2"/>
-                    <span className="text-sm">{file ? file.name : "Sube una foto o PDF de tu tarea"}</span>
-                </div>
-            </div>
-
-            <button 
+             {/* ... (Tus inputs de siempre van aquí) ... */}
+             <MathInput value={latexInput} onChange={setLatexInput} />
+             <button 
                 onClick={handleSubmit}
-                disabled={loading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow-lg transition-transform active:scale-95 disabled:opacity-50"
-            >
-                {loading ? 'Analizando...' : 'Resolver Problema'}
-            </button>
+                className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg"
+             >
+                {loading ? 'Pensando...' : 'Explicar en Pizarra'}
+             </button>
           </div>
         </div>
 
-        {/* COLUMNA DERECHA: RESULTADO INTERACTIVO */}
-        <div className="lg:col-span-8">
-            {solution ? (
-                <SolutionPlayer 
-                    solution={solution}
-                    currentStep={currentStep}
-                    isPlaying={isPlaying}
-                    togglePlay={togglePlay}
-                    setStep={setCurrentStep}
-                />
-            ) : (
-                <div className="h-full min-h-[400px] flex items-center justify-center bg-white/50 border-2 border-dashed border-slate-300 rounded-xl">
-                    <p className="text-slate-400">La solución interactiva aparecerá aquí</p>
-                </div>
-            )}
+        {/* COLUMNA DERECHA: NUEVO REPRODUCTOR */}
+        <div className="lg:col-span-8 h-[600px]"> {/* Dale altura explícita */}
+            
+            {/* Aquí renderizamos el nuevo componente */}
+            {/* Si tienes datos del backend úsalos, si no, usa el Mock */}
+            
+            <WhiteboardPlayer 
+                scenes={solution || WHITEBOARD_MOCK_DATA} 
+            />
+
         </div>
 
       </main>
