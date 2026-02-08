@@ -5,21 +5,45 @@
     import 'katex/dist/katex.min.css';
 
     // --- 1. FUNCIÓN DE INYECCIÓN DE COLORES ---
-    const injectHighlights = (latex, highlights = []) => {
-        if (!highlights || highlights.length === 0) return latex;
-        const sortedHighlights = [...highlights].sort((a, b) => b.start - a.start);
-        let result = latex;
-        sortedHighlights.forEach(({ start, end, color }) => {
-            const safeStart = Math.max(0, start);
-            const safeEnd = end === 'f' ? result.length : Math.min(result.length, end + 1);
-            if (safeStart >= safeEnd) return; 
-            const before = result.substring(0, safeStart);
-            const target = result.substring(safeStart, safeEnd);
-            const after = result.substring(safeEnd);
-            result = `${before}{\\color{${color}}${target}}${after}`;
-        });
-        return result;
-    };
+    // --- 1. FUNCIÓN DE INYECCIÓN DE COLORES ---
+const injectHighlights = (latex, highlights = []) => {
+    if (!highlights || highlights.length === 0) return latex;
+
+    // Ordenamos de atrás hacia adelante para no alterar los índices al insertar
+    const sortedHighlights = [...highlights].sort((a, b) => b.start - a.start);
+    
+    let result = latex;
+
+    sortedHighlights.forEach(({ start, end, color }) => {
+        // Validación de límites para evitar errores
+        const safeStart = Math.max(0, start);
+        // Si end es 'f', vamos hasta el final. Si no, tomamos el índice numérico.
+        // Nota: En tu JSON usas 0-1, lo cual significa caracter 0.
+        // slice(0, 1) toma el primer caracter.
+        // Asegúrate de que tu lógica de índices coincida con slice/substring.
+        
+        let safeEnd;
+        if (end === 'f') {
+            safeEnd = result.length;
+        } else {
+            // Si el JSON dice "0-1", matemáticamente es start=0, end=1 (exclusive en JS)
+            // Si tu lógica anterior era inclusiva, ajusta aquí.
+            // Asumiendo que tu "0-1" significa "caracteres del 0 al 1" (solo el 0):
+            safeEnd = Math.min(result.length, end); 
+        }
+
+        if (safeStart >= safeEnd) return; 
+
+        const before = result.substring(0, safeStart);
+        const target = result.substring(safeStart, safeEnd);
+        const after = result.substring(safeEnd);
+
+        // Inyectamos el color de forma segura
+        result = `${before}{\\color{${color}}${target}}${after}`;
+    });
+
+    return result;
+};
 
     // --- 2. COMPONENTES VISUALES ---
     const ElementoLatex = ({ data, state }) => {
@@ -130,8 +154,8 @@
                         totalY += element.y;
                         count++;
                     } else if (element.x1 !== undefined) {
-                        totalX += (element.x1 + element.x2) / 2;
-                        totalY += (element.y1 + element.y2) / 2;
+                        totalX += (element.x1 + element.x2+20) / 2;
+                        totalY += (element.y1 + element.y2-40) / 2;
                         count++;
                     }
                 }
@@ -149,9 +173,9 @@
                 // panX = centroPantalla - targetX
                 // Ajuste Y: Restamos 50px extra para dejar espacio a los subtítulos abajo
                 const newPanX = (clientWidth / 2) - targetX;
-                const newPanY = (clientHeight / 2) - targetY - 70; 
+                const newPanY = (clientHeight / 2) - targetY - 100; 
 
-                setPan({ x: 0.5*newPanX, y: 0.5*newPanY });
+                setPan({ x: 0.5*newPanX, y: 0.6*newPanY });
             }
         }
         // ------------------------------------------
