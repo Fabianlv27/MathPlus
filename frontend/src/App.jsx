@@ -7,13 +7,14 @@ import { useMathTutor } from './hooks/useMathTutor';
 import { Upload, FileText } from 'lucide-react';
 import {calculateFramePositions} from '../utils/layoutEngine'
 import { fixLatexHighlighting } from '../utils/latexFixer';
+import SidebarRecursos from './components/SidebarComponent'
 // ... (Aquí iría el const WHITEBOARD_MOCK_DATA que te di arriba) ...
 
 function App() {
   const [latexInput, setLatexInput] = useState('');
   const [instructions, setInstructions] = useState('');
   const [file, setFile] = useState(null);
-  
+  const [currentStep, setCurrentStep] = useState(0);
 // src/App.jsx
 
 const WHITEBOARD_MOCK_DATA =[
@@ -28,26 +29,43 @@ const WHITEBOARD_MOCK_DATA =[
       { "type": "Latex", "cont": "-\\frac{3}{2} - \\frac{1}{2}", "x": 400, "y": 500, "status": "hide" },
       { "type": "Latex", "cont": "-2", "x": 400, "y": 580, "status": "hide" }
     ],
+    "resources": [
+      { 
+        "step": 1, 
+        "title": "Propiedad de la Potencia", 
+        "tex": "n \\cdot \\log_b(x) = \\log_b(x^n)" 
+      },
+      { 
+        "step": 3, 
+        "title": "Propiedad del Cociente", 
+        "tex": "\\log_b(x) - \\log_b(y) = \\log_b(\\frac{x}{y})" 
+      },
+      { 
+        "step": 5, 
+        "title": "Definición de Logaritmo", 
+        "tex": "\\log_b(y) = x \\iff b^x = y" 
+      }
+    ],
     "insts": [
       {
-        "msg": "Tenemos una expresión con logaritmos en base 4. Vamos a simplificar.",
+        "msg": "Comenzamos con la expresión original.",
         "tgs": [
           { "tg": "0:(0-f)", "ac": "appear" }
         ],
         "fin": []
       },
       {
-        "msg": "Propiedad de potencia: Dividir por 2 es como elevar a 1/2 (Raíz cuadrada). √25 = 5.",
+        "msg": "Aplicamos la regla de la potencia: dividir por 2 es raíz cuadrada (√25 = 5).",
         "tgs": [
-          { "tg": "0:(0-13)", "ac": "resalt", "color": "#FCD34D" },
           { "tg": "0:(0-f)", "ac": "dim" },
+          { "tg": "0:(0-18)", "ac": "resalt", "color": "#FCD34D" },
           { "tg": "1:(0-f)", "ac": "appear" },
-          { "tg": "1:(0-6)", "ac": "resalt", "color": "#4ADE80" }
+          { "tg": "1:(0-7)", "ac": "resalt", "color": "#4ADE80" }
         ],
         "fin": []
       },
       {
-        "msg": "Reordenamos: Agrupamos los logaritmos para operarlos juntos.",
+        "msg": "Reordenamos los términos para agrupar los logaritmos.",
         "tgs": [
           { "tg": "1:(0-f)", "ac": "dim" },
           { "tg": "2:(0-f)", "ac": "appear" }
@@ -55,37 +73,37 @@ const WHITEBOARD_MOCK_DATA =[
         "fin": []
       },
       {
-        "msg": "Propiedad del cociente: Resta de logaritmos = Logaritmo de la división.",
+        "msg": "Restar logaritmos de la misma base equivale al logaritmo del cociente.",
         "tgs": [
+          { "tg": "2:(0-f)", "ac": "dim" },
           { "tg": "2:(0-6)", "ac": "resalt", "color": "#FCD34D" },
           { "tg": "2:(10-18)", "ac": "resalt", "color": "#FCD34D" },
-          { "tg": "2:(0-f)", "ac": "dim" },
           { "tg": "3:(0-f)", "ac": "appear" },
-          { "tg": "3:(6-11)", "ac": "resalt", "color": "#4ADE80" }
+          { "tg": "3:(0-16)", "ac": "resalt", "color": "#4ADE80" }
         ],
         "fin": []
       },
       {
-        "msg": "Simplificamos la fracción: 5/40 es igual a 1/8.",
+        "msg": "Simplificamos la fracción dentro del logaritmo: 5/40 = 1/8.",
         "tgs": [
           { "tg": "3:(0-f)", "ac": "dim" },
           { "tg": "4:(0-f)", "ac": "appear" },
-          { "tg": "4:(6-10)", "ac": "resalt", "color": "#4ADE80" }
+          { "tg": "4:(6-11)", "ac": "resalt", "color": "#4ADE80" }
         ],
         "fin": []
       },
       {
-        "msg": "Evaluamos: 4^x = 1/8. Como 4=2² y 8=2³, el resultado es -3/2.",
+        "msg": "Evaluamos: 4 elevado a qué potencia da 1/8? (-3/2).",
         "tgs": [
-          { "tg": "4:(0-11)", "ac": "resalt", "color": "#FCD34D" },
           { "tg": "4:(0-f)", "ac": "dim" },
+          { "tg": "4:(0-12)", "ac": "resalt", "color": "#FCD34D" },
           { "tg": "5:(0-f)", "ac": "appear" },
-          { "tg": "5:(0-4)", "ac": "resalt", "color": "#4ADE80" }
+          { "tg": "5:(0-10)", "ac": "resalt", "color": "#4ADE80" }
         ],
         "fin": []
       },
       {
-        "msg": "Suma de fracciones negativas: -3/2 - 1/2 = -4/2, que es -2.",
+        "msg": "Sumamos las fracciones negativas: -1.5 - 0.5 = -2.",
         "tgs": [
           { "tg": "5:(0-f)", "ac": "dim" },
           { "tg": "6:(0-f)", "ac": "appear" },
@@ -145,6 +163,12 @@ const WHITEBOARD_MOCK_DATA =[
                 {loading ? 'Pensando...' : 'Explicar en Pizarra'}
              </button>
           </div>
+
+             <SidebarRecursos 
+                resources={perfectSolution[0].resources} // Pasamos los recursos de la escena
+                currentStep={currentStep}         // Pasamos el paso actual para iluminar
+             />
+       
         </div>
 
         {/* COLUMNA DERECHA: NUEVO REPRODUCTOR */}
@@ -154,7 +178,8 @@ const WHITEBOARD_MOCK_DATA =[
             {/* Si tienes datos del backend úsalos, si no, usa el Mock */}
             
             <WhiteboardPlayer 
-                scenes={solution || perfectSolution} 
+                scenes={solution || perfectSolution}
+                onStepChange={(step) => setCurrentStep(step)} 
             />
 
         </div>

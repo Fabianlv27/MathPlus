@@ -75,7 +75,14 @@ const injectHighlights = (latex, highlights = []) => {
                 animate={{ opacity: state.visible ? 1 : 0, scale: state.visible ? 1 : 0.8 }}
                 transition={{ duration: 0.5 }}
                 className="absolute text-xl md:text-2xl font-serif text-slate-800 p-1 whitespace-nowrap z-10 select-none"
-                style={{ left: data.x, top: data.y }}
+                style={{
+    position: 'absolute',
+    left: `${data.x}px`, // Si la IA manda 400
+    top: `${data.y}px`,
+    // ESTA ES LA CLAVE:
+    transform: 'translateX(-50%)', // Mueve el elemento 50% de su propio ancho a la izquierda
+    // ... otros estilos
+}}
             >
                 <InlineMath math={finalLatex} />
             </motion.div>
@@ -196,7 +203,7 @@ const injectHighlights = (latex, highlights = []) => {
                 const newPanX = (clientWidth / 2) - targetX;
                 const newPanY = (clientHeight / 2) - targetY - 100; 
 
-                setPan({ x: 0.7*newPanX, y: 0.6*newPanY });
+                setPan({ x:6*newPanX, y: 0.6*newPanY });
             }
         }
         // ------------------------------------------
