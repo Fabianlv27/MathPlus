@@ -175,3 +175,132 @@ const WHITEBOARD_MOCK_DATA = [
         ]
     }
 ];
+[
+  {
+    "ig": "Ecuación Lineal Simple",
+    "cont": [
+      { "type": "Latex", "cont": "3x+5=20", "x": 400, "y": 100, "status": "hide" },
+      { "type": "Latex", "cont": "3x=20-5", "x": 400, "y": 180, "status": "hide" },
+      { "type": "Latex", "cont": "3x=15", "x": 400, "y": 260, "status": "hide" },
+      { "type": "Latex", "cont": "x=15/3", "x": 400, "y": 340, "status": "hide" },
+      { "type": "Latex", "cont": "x=5", "x": 400, "y": 420, "status": "hide" }
+    ],
+    "insts": [
+      {
+        "msg": "Tenemos la ecuación. El objetivo es despejar la x.",
+        "tgs": [
+          { "tg": "0:(0-f)", "ac": "appear" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Identificamos el +5 que está sumando.",
+        "tgs": [
+          { "tg": "0:(2-4)", "ac": "resalt", "color": "#FCD34D" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Pasamos el 5 al otro lado restando (inverso aditivo).",
+        "tgs": [
+          { "tg": "0:(0-f)", "ac": "dim" },
+          { "tg": "1:(0-f)", "ac": "appear" },
+          { "tg": "1:(5-7)", "ac": "resalt", "color": "#FCD34D" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Resolvemos la resta: 20 menos 5 es 15.",
+        "tgs": [
+          { "tg": "1:(0-f)", "ac": "dim" },
+          { "tg": "2:(0-f)", "ac": "appear" },
+          { "tg": "2:(3-5)", "ac": "resalt", "color": "#4ADE80" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "El 3 multiplica a la x, así que pasa dividiendo.",
+        "tgs": [
+          { "tg": "2:(0-f)", "ac": "dim" },
+          { "tg": "3:(0-f)", "ac": "appear" },
+          { "tg": "3:(5-6)", "ac": "resalt", "color": "#FCD34D" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Dividimos 15 entre 3. ¡Resultado final!",
+        "tgs": [
+          { "tg": "3:(0-f)", "ac": "dim" },
+          { "tg": "4:(0-f)", "ac": "appear" },
+          { "tg": "4:(0-f)", "ac": "resalt", "color": "#4ADE80" }
+        ],
+        "fin": []
+      }
+    ]
+  }
+]
+[
+  {
+    "ig": "Trinomio Cuadrado Perfecto",
+    "cont": [
+      { "type": "Latex", "cont": "x^2+6x+9", "x": 400, "y": 100, "status": "hide" },
+      { "type": "Latex", "cont": "x \\quad\\quad 3", "x": 400, "y": 180, "status": "hide" },
+      { "type": "Latex", "cont": "2(x)(3)=6x", "x": 400, "y": 260, "status": "hide" },
+      { "type": "Flecha", "x": 450, "y": 250, "toX": 450, "toY": 130, "status": "hide" },
+      { "type": "Latex", "cont": "(x+3)^2", "x": 400, "y": 340, "status": "hide" }
+    ],
+    "insts": [
+      {
+        "msg": "Identificamos el trinomio. Para ser 'Perfecto', analizamos los extremos.",
+        "tgs": [
+          { "tg": "0:(0-f)", "ac": "appear" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Verificamos si el primer y último término tienen raíz cuadrada exacta.",
+        "tgs": [
+          { "tg": "0:(0-3)", "ac": "resalt", "color": "#FCD34D" }, 
+          { "tg": "0:(6-8)", "ac": "resalt", "color": "#FCD34D" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Extraemos las bases: la raíz de x² es 'x' y la de 9 es '3'.",
+        "tgs": [
+          { "tg": "0:(0-f)", "ac": "dim" },
+          { "tg": "1:(0-f)", "ac": "appear" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "La regla de oro: El doble del primero por el segundo debe dar el término central.",
+        "tgs": [
+          { "tg": "1:(0-f)", "ac": "dim" },
+          { "tg": "2:(0-f)", "ac": "appear" },
+          { "tg": "2:(0-7)", "ac": "resalt", "color": "#FCD34D" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "¡Coincide! 6x es igual al término central original. Es un TCP.",
+        "tgs": [
+          { "tg": "2:(8-10)", "ac": "resalt", "color": "#4ADE80" },
+          { "tg": "0:(3-5)", "ac": "resalt", "color": "#4ADE80" },
+          { "tg": "3:(0-f)", "ac": "appear" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Factorizamos: Sumamos las bases y elevamos al cuadrado.",
+        "tgs": [
+          { "tg": "2:(0-f)", "ac": "dim" },
+          { "tg": "3:(0-f)", "ac": "disappear" },
+          { "tg": "4:(0-f)", "ac": "appear" },
+          { "tg": "4:(0-f)", "ac": "resalt", "color": "#4ADE80" }
+        ],
+        "fin": [3]
+      }
+    ]
+  }
+]

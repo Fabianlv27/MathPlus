@@ -1,9 +1,5 @@
 // src/utils/latexFixer.js
 
-/**
- * Encuentra la llave de cierre correspondiente a una de apertura.
- * Maneja anidamiento: \frac{\frac{a}{b}}{c}
- */
 const findClosingBrace = (str, startIdx) => {
     let balance = 1;
     for (let i = startIdx + 1; i < str.length; i++) {
@@ -11,113 +7,167 @@ const findClosingBrace = (str, startIdx) => {
         if (str[i] === '}') balance--;
         if (balance === 0) return i;
     }
-    return -1; // Error en LaTeX
+    return -1;
+};
+
+// Encuentra el cierre de un paréntesis balanceado (...)
+const findClosingParen = (str, startIdx) => {
+    let balance = 1;
+    for (let i = startIdx + 1; i < str.length; i++) {
+        if (str[i] === '(') balance++;
+        if (str[i] === ')') balance--;
+        if (balance === 0) return i;
+    }
+    return -1;
 };
 
 /**
- * Identifica los rangos [inicio, fin] de todas las fracciones en el string.
+ * Detecta rangos "Atómicos".
+ * Ahora incluye: Comandos, Grupos {}, Paréntesis () y absorbe Subíndices/Potencias (_ ^)
  */
-const getAllFractionRanges = (latex) => {
+const getAtomicRanges = (latex) => {
     const ranges = [];
-    const regex = /\\frac/g;
-    let match;
+    const len = latex.length;
 
-    while ((match = regex.exec(latex)) !== null) {
-        const start = match.index; // Donde empieza \frac
-        
-        // 1. Buscar inicio del numerador '{'
-        const numStart = latex.indexOf('{', start);
-        if (numStart === -1) continue;
-        
-        // 2. Buscar fin del numerador '}'
-        const numEnd = findClosingBrace(latex, numStart);
-        if (numEnd === -1) continue;
+    for (let i = 0; i < len; i++) {
+        let start = i;
+        let end = i;
 
-        // 3. Buscar inicio del denominador '{' (debe estar después del numerador)
-        const denStart = latex.indexOf('{', numEnd);
-        if (denStart === -1) continue;
+        // 1. DETECTOR DE COMANDOS (\frac, \log, etc.)
+        if (latex[i] === '\\') {
+            let j = i + 1;
+            while (j < len && /[a-zA-Z]/.test(latex[j])) j++;
+            end = j;
+            
+            // Caso especial: \frac{a}{b} (absorbe sus dos argumentos)
+            if (latex.substring(start, end) === '\\frac') {
+                let ptr = end;
+                // Argumento 1
+                while (ptr < len && latex[ptr] === ' ') ptr++; // saltar espacios
+                if (latex[ptr] === '{') {
+                    const close1 = findClosingBrace(latex, ptr);
+                    if (close1 !== -1) {
+                        ptr = close1 + 1;
+                        // Argumento 2
+                        while (ptr < len && latex[ptr] === ' ') ptr++;
+                        if (latex[ptr] === '{') {
+                            const close2 = findClosingBrace(latex, ptr);
+                            if (close2 !== -1) {
+                                end = close2 + 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // 2. DETECTOR DE GRUPOS { ... }
+        else if (latex[i] === '{') {
+            const close = findClosingBrace(latex, i);
+            if (close !== -1) end = close + 1;
+        }
+        // 3. DETECTOR DE PARÉNTESIS ( ... )
+        else if (latex[i] === '(') {
+            const close = findClosingParen(latex, i);
+            if (close !== -1) end = close + 1;
+        }
+        // 4. CARÁCTER NORMAL (Si no es comando ni grupo, el átomo es el carácter)
+        else {
+            end = i + 1;
+        }
 
-        // 4. Buscar fin del denominador '}'
-        const denEnd = findClosingBrace(latex, denStart);
-        if (denEnd === -1) continue;
+        // --- ABSORCIÓN DE SUFIJOS (_ y ^) ---
+        // Si después de este átomo viene un _ o ^, el átomo debe crecer para incluirlo
+        // Ejemplo: \log se convierte en \log_4 o \log_{10}
+        let nextPtr = end;
+        while (nextPtr < len) {
+            // Saltar espacios
+            if (latex[nextPtr] === ' ') {
+                nextPtr++;
+                continue;
+            }
+            
+            // Si encontramos un sufijo
+            if (latex[nextPtr] === '_' || latex[nextPtr] === '^') {
+                let suffixStart = nextPtr;
+                let suffixEnd = nextPtr + 1;
+                
+                // Mirar qué hay después del _ o ^
+                let argPtr = suffixEnd;
+                // Si es un grupo { ... }
+                if (argPtr < len && latex[argPtr] === '{') {
+                    const close = findClosingBrace(latex, argPtr);
+                    if (close !== -1) suffixEnd = close + 1;
+                } 
+                // Si es un solo carácter (ej: _4)
+                else if (argPtr < len) {
+                    suffixEnd = argPtr + 1;
+                }
 
-        // El rango total de la fracción es desde '\' hasta el último '}'
-        ranges.push({ start: start, end: denEnd + 1 });
+                // Extendemos el átomo original para incluir el sufijo
+                end = suffixEnd;
+                nextPtr = end; // Continuamos buscando (ej: x_i^2 tiene dos sufijos)
+            } else {
+                break; // No hay más sufijos
+            }
+        }
+
+        if (end > start) {
+            ranges.push({ start, end });
+            // Avanzamos el bucle principal para no re-procesar lo que acabamos de agrupar
+            // Restamos 1 porque el for hará i++
+            i = end - 1; 
+        }
     }
+
     return ranges;
 };
 
-/**
- * Función Principal: Corrige los targets de la IA
- */
 export const fixLatexHighlighting = (scene) => {
-    // Hacemos una copia profunda para no mutar el original
     const newScene = JSON.parse(JSON.stringify(scene));
-
-    // Mapeo rápido de contenidos por ID o Índice
     const contents = {};
     newScene.cont.forEach((el, idx) => {
-        contents[idx] = el.cont; // Guardamos el string LaTeX
+        contents[idx] = el.cont;
         if (el.id) contents[el.id] = el.cont;
     });
 
-    // Recorremos las instrucciones
     newScene.insts.forEach(inst => {
         if (!inst.tgs) return;
-
         inst.tgs.forEach(tgObj => {
-            // Solo nos interesan los resaltados con rango específico
             if (tgObj.ac === 'resalt' && tgObj.tg.includes(':')) {
-                
-                // Parsear: "1:(5-10)" -> id="1", range="5-10"
-                const [idStr, rangeStr] = tgObj.tg.split(':');
+                let [idStr, rangeStr] = tgObj.tg.split(':');
                 const rangeClean = rangeStr.replace('(', '').replace(')', '');
-                
-                // Si es 'f' (final), no necesitamos corregir nada, selecciona todo
                 if (rangeClean.includes('f')) return;
 
                 const [reqStart, reqEndRaw] = rangeClean.split('-').map(Number);
                 const latex = contents[idStr];
+                if (!latex) return;
 
-                if (!latex) return; // No encontramos el elemento
-
-                // Obtener límites reales de todas las fracciones en este LaTeX
-                const fracRanges = getAllFractionRanges(latex);
-
+                const atomicRanges = getAtomicRanges(latex);
                 let finalStart = reqStart;
-                let finalEnd = reqEndRaw;
-
-                // Verificamos si nuestra selección choca con alguna fracción
-                let corrected = false;
+                let finalEnd = reqEndRaw; 
+                let changed = true;
                 
-                fracRanges.forEach(frac => {
-                    // Lógica de intersección:
-                    // Si el rango pedido empieza dentro de la fracción O termina dentro de ella
-                    // O si la fracción está totalmente dentro del rango pedido.
-                    
-                    // Simplificado: Si se solapan
-                    const overlap = (finalStart < frac.end) && (finalEnd > frac.start);
+                while (changed) {
+                    changed = false;
+                    atomicRanges.forEach(atom => {
+                        const overlap = (finalStart < atom.end) && (finalEnd > atom.start);
+                        if (overlap) {
+                            const newStart = Math.min(finalStart, atom.start);
+                            const newEnd = Math.max(finalEnd, atom.end);
+                            if (newStart !== finalStart || newEnd !== finalEnd) {
+                                finalStart = newStart;
+                                finalEnd = newEnd;
+                                changed = true;
+                            }
+                        }
+                    });
+                }
 
-                    if (overlap) {
-                        // ¡DETECTADO! La IA seleccionó mal (ej: solo el numerador).
-                        // Expandimos la selección para incluir TODA la fracción.
-                        finalStart = Math.min(finalStart, frac.start);
-                        finalEnd = Math.max(finalEnd, frac.end); // Aseguramos cubrir hasta el final
-                        corrected = true;
-                    }
-                });
-
-                if (corrected) {
-                    // Reescribimos el target con los nuevos índices
-                    // Nota: Restamos 1 al final porque tu lógica de slice suele ser exclusiva o basada en longitud
-                    // Ajusta según tu lógica de injectHighlights. Si es substring(start, end), usa finalEnd tal cual.
-                    tgObj.tg = `${idStr}:(${finalStart}-${finalEnd - 1})`; 
-                    
-                    console.log(`🔧 Auto-fix aplicado en fracción: ${reqStart}-${reqEndRaw} -> ${finalStart}-${finalEnd-1}`);
+                if (finalStart !== reqStart || finalEnd !== reqEndRaw) {
+                    tgObj.tg = `${idStr}:(${finalStart}-${finalEnd})`;
                 }
             }
         });
     });
-
     return newScene;
 };

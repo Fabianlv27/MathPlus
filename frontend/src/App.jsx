@@ -18,92 +18,78 @@ function App() {
 
 const WHITEBOARD_MOCK_DATA =[
   {
-    "ig": "Sistema de Ecuaciones (Reducción)",
+    "ig": "Simplificación Logarítmica",
     "cont": [
-      { "type": "Latex", "cont": "x + y = 10", "x": 340, "y": 100, "status": "hide" },
-      { "type": "Latex", "cont": "x - y = 2", "x": 350, "y": 180, "status": "hide" },
-      { "type": "Latex", "cont": "2x = 12", "x": 360, "y": 260, "status": "hide" },
-      { "type": "Latex", "cont": "x = \\frac{12}{2}", "x": 360, "y": 340, "status": "hide" },
-      { "type": "Latex", "cont": "x = 6", "x": 370, "y": 420, "status": "hide" },
-      { "type": "Latex", "cont": "6 + y = 10", "x": 340, "y": 500, "status": "hide" },
-      { "type": "Latex", "cont": "y = 10 - 6", "x": 340, "y": 580, "status": "hide" },
-      { "type": "Latex", "cont": "y = 4", "x": 370, "y": 660, "status": "hide" },
-      { "type": "Latex", "cont": "(x, y) = (6, 4)", "x": 300, "y": 740, "status": "hide" },
-      { "type": "Marco", "x1": 280, "y1": 720, "x2": 590, "y2": 800, "status": "hide" }
+      { "type": "Latex", "cont": "\\frac{\\log_4 25}{2} - \\frac{1}{2} - \\log_4 40", "x": 400, "y": 100, "status": "hide" },
+      { "type": "Latex", "cont": "\\log_4 5 - \\frac{1}{2} - \\log_4 40", "x": 400, "y": 180, "status": "hide" },
+      { "type": "Latex", "cont": "\\log_4 5 - \\log_4 40 - \\frac{1}{2}", "x": 400, "y": 260, "status": "hide" },
+      { "type": "Latex", "cont": "\\log_4(\\frac{5}{40}) - \\frac{1}{2}", "x": 400, "y": 340, "status": "hide" },
+      { "type": "Latex", "cont": "\\log_4(\\frac{1}{8}) - \\frac{1}{2}", "x": 400, "y": 420, "status": "hide" },
+      { "type": "Latex", "cont": "-\\frac{3}{2} - \\frac{1}{2}", "x": 400, "y": 500, "status": "hide" },
+      { "type": "Latex", "cont": "-2", "x": 400, "y": 580, "status": "hide" }
     ],
     "insts": [
       {
-        "msg": "Tenemos la primera ecuación: x más y es igual a 10.",
+        "msg": "Tenemos una expresión con logaritmos en base 4. Vamos a simplificar.",
         "tgs": [
-          { "tg": "0", "ac": "appear" }
+          { "tg": "0:(0-f)", "ac": "appear" }
         ],
         "fin": []
       },
       {
-        "msg": "Y la segunda ecuación: x menos y es igual a 2.",
+        "msg": "Propiedad de potencia: Dividir por 2 es como elevar a 1/2 (Raíz cuadrada). √25 = 5.",
         "tgs": [
-          { "tg": "1", "ac": "appear" }
+          { "tg": "0:(0-13)", "ac": "resalt", "color": "#FCD34D" },
+          { "tg": "0:(0-f)", "ac": "dim" },
+          { "tg": "1:(0-f)", "ac": "appear" },
+          { "tg": "1:(0-6)", "ac": "resalt", "color": "#4ADE80" }
         ],
         "fin": []
       },
       {
-        "msg": "Usamos reducción. Sumamos las ecuaciones verticalmente. Las 'y' se cancelan (+y -y = 0).",
+        "msg": "Reordenamos: Agrupamos los logaritmos para operarlos juntos.",
         "tgs": [
-          { "tg": "0:(4-5)", "ac": "resalt", "color": "#EF4444" },
-          { "tg": "1:(4-5)", "ac": "resalt", "color": "#EF4444" }
+          { "tg": "1:(0-f)", "ac": "dim" },
+          { "tg": "2:(0-f)", "ac": "appear" }
         ],
         "fin": []
       },
       {
-        "msg": "Sumamos el resto: x+x es 2x, y 10+2 es 12. Obtenemos 2x = 12.",
+        "msg": "Propiedad del cociente: Resta de logaritmos = Logaritmo de la división.",
         "tgs": [
-          { "tg": "2", "ac": "appear" }
-        ],
-        "fin": [0, 1]
-      },
-      {
-        "msg": "Despejamos x pasando el 2 a dividir.",
-        "tgs": [
-          { "tg": "2:(0-1)", "ac": "resalt", "color": "#FCD34D" },
-          { "tg": "3", "ac": "appear" }
-        ],
-        "fin": [2]
-      },
-      {
-        "msg": "Calculamos: 12 entre 2 es 6. Ya tenemos el valor de x.",
-        "tgs": [
-          { "tg": "4", "ac": "appear", "color": "#4ADE80" }
-        ],
-        "fin": [3]
-      },
-      {
-        "msg": "Ahora sustituimos la x por 6 en la primera ecuación original.",
-        "tgs": [
-          { "tg": "5", "ac": "appear" },
-          { "tg": "5:(0-1)", "ac": "resalt", "color": "#FCD34D" }
+          { "tg": "2:(0-6)", "ac": "resalt", "color": "#FCD34D" },
+          { "tg": "2:(10-18)", "ac": "resalt", "color": "#FCD34D" },
+          { "tg": "2:(0-f)", "ac": "dim" },
+          { "tg": "3:(0-f)", "ac": "appear" },
+          { "tg": "3:(6-11)", "ac": "resalt", "color": "#4ADE80" }
         ],
         "fin": []
       },
       {
-        "msg": "Despejamos la y. El 6 pasa restando al otro lado.",
+        "msg": "Simplificamos la fracción: 5/40 es igual a 1/8.",
         "tgs": [
-          { "tg": "5:(0-1)", "ac": "resalt", "color": "#FCD34D" },
-          { "tg": "6", "ac": "appear" }
+          { "tg": "3:(0-f)", "ac": "dim" },
+          { "tg": "4:(0-f)", "ac": "appear" },
+          { "tg": "4:(6-10)", "ac": "resalt", "color": "#4ADE80" }
         ],
-        "fin": [5]
+        "fin": []
       },
       {
-        "msg": "Restamos: 10 menos 6 es 4. Tenemos el valor de y.",
+        "msg": "Evaluamos: 4^x = 1/8. Como 4=2² y 8=2³, el resultado es -3/2.",
         "tgs": [
-          { "tg": "7", "ac": "appear", "color": "#4ADE80" }
+          { "tg": "4:(0-11)", "ac": "resalt", "color": "#FCD34D" },
+          { "tg": "4:(0-f)", "ac": "dim" },
+          { "tg": "5:(0-f)", "ac": "appear" },
+          { "tg": "5:(0-4)", "ac": "resalt", "color": "#4ADE80" }
         ],
-        "fin": [6]
+        "fin": []
       },
       {
-        "msg": "El sistema está resuelto. La solución es el punto (6, 4).",
+        "msg": "Suma de fracciones negativas: -3/2 - 1/2 = -4/2, que es -2.",
         "tgs": [
-          { "tg": "8", "ac": "appear" },
-          { "tg": "9", "ac": "appear", "color": "#4ADE80" }
+          { "tg": "5:(0-f)", "ac": "dim" },
+          { "tg": "6:(0-f)", "ac": "appear" },
+          { "tg": "6:(0-f)", "ac": "resalt", "color": "#4ADE80" }
         ],
         "fin": []
       }

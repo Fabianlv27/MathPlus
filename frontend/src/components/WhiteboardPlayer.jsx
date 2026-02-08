@@ -5,42 +5,63 @@
     import 'katex/dist/katex.min.css';
 
     // --- 1. FUNCIÓN DE INYECCIÓN DE COLORES ---
-    // --- 1. FUNCIÓN DE INYECCIÓN DE COLORES ---
+// En WhiteboardPlayer.jsx
+
+// En WhiteboardPlayer.jsx
+
 const injectHighlights = (latex, highlights = []) => {
     if (!highlights || highlights.length === 0) return latex;
-
-    // Ordenamos de atrás hacia adelante para no alterar los índices al insertar
-    const sortedHighlights = [...highlights].sort((a, b) => b.start - a.start);
     
-    let result = latex;
+    // 1. Mapa de colores por carácter
+    // Creamos un array vacío del largo del texto
+    const charColors = new Array(latex.length).fill(null);
 
-    sortedHighlights.forEach(({ start, end, color }) => {
-        // Validación de límites para evitar errores
+    // 2. Pintamos el mapa
+    // Iteramos los highlights y asignamos el color a cada índice.
+    // Al hacerlo en orden, si hay solapamiento, el último highlight (más específico) gana.
+    highlights.forEach(({ start, end, color }) => {
         const safeStart = Math.max(0, start);
-        // Si end es 'f', vamos hasta el final. Si no, tomamos el índice numérico.
-        // Nota: En tu JSON usas 0-1, lo cual significa caracter 0.
-        // slice(0, 1) toma el primer caracter.
-        // Asegúrate de que tu lógica de índices coincida con slice/substring.
-        
-        let safeEnd;
-        if (end === 'f') {
-            safeEnd = result.length;
-        } else {
-            // Si el JSON dice "0-1", matemáticamente es start=0, end=1 (exclusive en JS)
-            // Si tu lógica anterior era inclusiva, ajusta aquí.
-            // Asumiendo que tu "0-1" significa "caracteres del 0 al 1" (solo el 0):
-            safeEnd = Math.min(result.length, end); 
+        const safeEnd = end === 'f' ? latex.length : Math.min(latex.length, end);
+
+        for (let i = safeStart; i < safeEnd; i++) {
+            charColors[i] = color;
+        }
+    });
+
+    // 3. Reconstrucción del String (Agrupamiento)
+    let result = "";
+    let currentColor = null;
+    let buffer = ""; // Acumula caracteres del mismo color
+
+    for (let i = 0; i < latex.length; i++) {
+        const myColor = charColors[i];
+
+        // Si cambiamos de color (o de color a nada, o de nada a color)
+        if (myColor !== currentColor) {
+            // Vacíamos lo que teníamos acumulado con su color correspondiente
+            if (buffer.length > 0) {
+                if (currentColor) {
+                    result += `\\textcolor{${currentColor}}{${buffer}}`;
+                } else {
+                    result += buffer;
+                }
+            }
+            // Reiniciamos para el nuevo color
+            buffer = "";
+            currentColor = myColor;
         }
 
-        if (safeStart >= safeEnd) return; 
+        buffer += latex[i];
+    }
 
-        const before = result.substring(0, safeStart);
-        const target = result.substring(safeStart, safeEnd);
-        const after = result.substring(safeEnd);
-
-        // Inyectamos el color de forma segura
-        result = `${before}{\\color{${color}}${target}}${after}`;
-    });
+    // 4. Vaciar el último buffer al final del loop
+    if (buffer.length > 0) {
+        if (currentColor) {
+            result += `\\textcolor{${currentColor}}{${buffer}}`;
+        } else {
+            result += buffer;
+        }
+    }
 
     return result;
 };
@@ -175,7 +196,7 @@ const injectHighlights = (latex, highlights = []) => {
                 const newPanX = (clientWidth / 2) - targetX;
                 const newPanY = (clientHeight / 2) - targetY - 100; 
 
-                setPan({ x: 0.5*newPanX, y: 0.6*newPanY });
+                setPan({ x: 0.7*newPanX, y: 0.6*newPanY });
             }
         }
         // ------------------------------------------
