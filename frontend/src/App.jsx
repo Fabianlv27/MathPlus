@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState } from 'react';
+import React, { useState,useMemo } from 'react';
 import MathInput from './components/MathInput';
 // import SolutionPlayer from './components/SolutionPlayer';  <-- COMENTA ESTE
 import WhiteboardPlayer from './components/WhiteboardPlayer'; // <-- IMPORTA ESTE
@@ -15,6 +15,8 @@ function App() {
   const [instructions, setInstructions] = useState('');
   const [file, setFile] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
+  // Estado para decirle al reproductor a dónde ir (Output App -> Player)
+  const [targetStep, setTargetStep] = useState(null);
 // src/App.jsx
 
 const WHITEBOARD_MOCK_DATA =[
@@ -115,19 +117,13 @@ const WHITEBOARD_MOCK_DATA =[
   }
 ]
         // 2. PROCESAMIENTO EN CADENA
-        const perfectSolution = WHITEBOARD_MOCK_DATA.map(scene => {
-            
-            // Paso A: Arreglar los resaltados de fracciones rotas
-            // (Esto modifica scene.insts)
-            const sceneWithFixedHighlights = fixLatexHighlighting(scene);
-
-            // Paso B: Calcular las dimensiones matemáticas de los marcos
-            // (Esto modifica scene.cont usando tus fórmulas x1, x2, y1, y2)
-            const sceneWithCalculatedFrames = calculateFramePositions(sceneWithFixedHighlights);
-
-            return sceneWithCalculatedFrames;
-        });
-
+       const perfectSolution = useMemo(() => {
+      console.log("Calculando solución perfecta..."); // Solo deberías ver esto una vez
+      return WHITEBOARD_MOCK_DATA.map(scene => {
+          const fixed = fixLatexHighlighting(scene);
+          return calculateFramePositions(fixed);
+      });
+  }, [])
   // Usamos el hook para la lógica de API (opcional por ahora si usas Mock)
   const { 
     solveProblem, 
@@ -141,6 +137,10 @@ const WHITEBOARD_MOCK_DATA =[
     
     // Por ahora, solo simulación visual:
     console.log("Simulando resolución...");
+  };
+
+  const handleResourceClick = (stepIndex) => {
+      setTargetStep(stepIndex); // Actualizamos el objetivo, el Player lo detectará
   };
 
   return (
@@ -166,7 +166,8 @@ const WHITEBOARD_MOCK_DATA =[
 
              <SidebarRecursos 
                 resources={perfectSolution[0].resources} // Pasamos los recursos de la escena
-                currentStep={currentStep}         // Pasamos el paso actual para iluminar
+               currentStepIdx={currentStep}    
+               onResourceClick={handleResourceClick}    // Pasamos el paso actual para iluminar
              />
        
         </div>
@@ -178,8 +179,9 @@ const WHITEBOARD_MOCK_DATA =[
             {/* Si tienes datos del backend úsalos, si no, usa el Mock */}
             
             <WhiteboardPlayer 
-                scenes={solution || perfectSolution}
-                onStepChange={(step) => setCurrentStep(step)} 
+                scenes={ perfectSolution}
+                onStepChange={setCurrentStep}
+                requestedStep={targetStep}
             />
 
         </div>
