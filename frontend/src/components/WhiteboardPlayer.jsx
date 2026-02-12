@@ -35,24 +35,40 @@ const ElementoLatex = ({ data, state, onClick, stepIndex }) => {
     const isVisible = state?.visible || false;
     const finalLatex = injectHighlights(data.cont, highlights);
     
+    // Verificamos si es interactivo
+    const isInteractive = isVisible && stepIndex !== undefined;
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: isVisible ? 1 : 0, scale: isVisible ? 1 : 0.8 }}
             transition={{ duration: 0.5 }}
-            onClick={() => onClick(stepIndex)} // CLICK PARA NAVEGAR
-            className={`absolute text-xl md:text-2xl font-serif p-1 whitespace-nowrap z-10 select-none transition-colors duration-200
-                ${isVisible ? 'cursor-pointer hover:bg-indigo-50/50 hover:scale-105' : 'pointer-events-none'}
+            onClick={(e) => {
+                if (isInteractive) {
+                    e.preventDefault();
+                    e.stopPropagation(); 
+                    onClick(stepIndex);
+                }
+            }}
+            className={`absolute flex items-center justify-center rounded-xl transition-all duration-200 z-50 select-none
+                ${isInteractive 
+                    ? 'cursor-pointer hover:bg-indigo-100/40 hover:scale-110 active:scale-95 border border-transparent hover:border-indigo-200' 
+                    : 'pointer-events-none'}
             `}
             style={{ 
                 left: `${data.x}px`, 
                 top: `${data.y}px`, 
-                transform: 'translateX(-50%)',
-                color: '#1e293b' // Slate-800
+                transform: 'translate(-50%, -50%)', 
+                color: '#1e293b',
+                padding: '20px',
+                minWidth: '80px',
+                minHeight: '60px'
             }}
-            title="Haz clic para ir a la explicación de este paso"
+            title={isInteractive ? `Ir al paso ${stepIndex + 1}` : ""}
         >
-            <InlineMath math={finalLatex} />
+            <span className="text-xl md:text-3xl whitespace-nowrap pointer-events-none">
+                <InlineMath math={finalLatex} />
+            </span>
         </motion.div>
     );
 };
@@ -90,6 +106,7 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
 
     const [currentSceneIdx, setCurrentSceneIdx] = useState(0);
     const [currentStepIdx, setCurrentStepIdx] = useState(-1);
+    const [maxStepReached, setMaxStepReached] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
     const [elementStates, setElementStates] = useState({});
     
@@ -100,23 +117,21 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
     const containerRef = useRef(null);
     
     const synth = useRef(window.speechSynthesis);
+    const isManualJump = useRef(false);
+
     const scene = scenes[currentSceneIdx];
 
-    // --- MAPA DE NAVEGACIÓN INVERSA (Elemento ID -> Paso donde aparece) ---
-    // Esto permite saber a qué paso saltar cuando haces clic en una fórmula
+    // Mapa de navegación
     const elementToStepMap = useMemo(() => {
         const map = {};
         if (!scene) return map;
         scene.insts.forEach((inst, stepIndex) => {
             if (inst.tgs) {
                 inst.tgs.forEach(tg => {
-                    if (tg.ac === 'appear') {
-                        const idStr = tg.tg.toString().split(':')[0];
-                        const idx = parseInt(idStr);
-                        // Solo registramos la PRIMERA vez que aparece
-                        if (map[idx] === undefined) {
-                            map[idx] = stepIndex;
-                        }
+                    const idStr = tg.tg.toString().split(':')[0];
+                    const idx = parseInt(idStr);
+                    if (map[idx] === undefined) {
+                        map[idx] = stepIndex;
                     }
                 });
             }
@@ -124,16 +139,29 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         return map;
     }, [scene]);
 
-    // EFECTO: Escuchar petición de salto externo (Sidebar)
+    // Actualizar maxStepReached
+    useEffect(() => {
+        if (currentStepIdx > maxStepReached) {
+            setMaxStepReached(currentStepIdx);
+        }
+    }, [currentStepIdx]); 
+
+    // Salto externo (Sidebar)
     useEffect(() => {
         if (requestedStep !== null && requestedStep !== undefined && requestedStep !== currentStepIdx) {
             handleJumpToStep(requestedStep);
         }
     }, [requestedStep]);
 
-    // Reset al cambiar escena
+    // Notificar cambio de paso
+    useEffect(() => {
+        if (onStepChange) onStepChange(currentStepIdx);
+    }, [currentStepIdx, onStepChange]);
+
+    // Reset completo al cambiar escena
     useEffect(() => {
         setCurrentStepIdx(-1);
+        setMaxStepReached(-1);
         setIsPlaying(false);
         synth.current.cancel();
         setPan({ x: 0, y: 0 });
@@ -142,14 +170,59 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         setElementStates(initialState);
     }, [currentSceneIdx, scene]);
 
-    // Notificar cambio de paso
-    useEffect(() => {
-        if (onStepChange) onStepChange(currentStepIdx);
-    }, [currentStepIdx, onStepChange]);
 
-    // === MOTOR DE LÓGICA DE ESTADOS ===
+    // ==========================================
+    // 🧠 EFECTO 1: LÓGICA DE AUDIO Y SECUENCIA
+    // ==========================================
+    // Este efecto SOLO se dispara cuando cambia el paso o el play.
+    // NO depende de maxStepReached ni de autoPan.
+    useEffect(() => {
+        // 1. Limpieza de audio previo
+        synth.current.cancel();
+
+        // 2. Si no hay paso válido o pausa, no hacemos nada más
+        if (currentStepIdx === -1 || !isPlaying) return;
+
+        const currentInst = scene.insts[currentStepIdx];
+        if (!currentInst) return;
+
+        // 3. Configurar y lanzar audio
+        const utterance = new SpeechSynthesisUtterance(currentInst.msg);
+        utterance.lang = 'es-ES';
+        utterance.rate = 1.1;
+        
+        utterance.onend = () => {
+            // Si el usuario saltó manualmente, ignoramos este evento de fin
+            if (isManualJump.current) {
+                isManualJump.current = false;
+                return;
+            }
+
+            if (isPlaying) {
+                if (currentStepIdx < scene.insts.length - 1) {
+                    setCurrentStepIdx(prev => prev + 1);
+                } else {
+                    setIsPlaying(false);
+                }
+            }
+        };
+
+        // Pequeño timeout para evitar conflictos de navegador
+        const timer = setTimeout(() => synth.current.speak(utterance), 10);
+        
+        return () => clearTimeout(timer);
+
+    }, [currentStepIdx, isPlaying, scene]); // <--- DEPENDENCIAS CRÍTICAS REDUCIDAS
+
+
+    // ==========================================
+    // 👁️ EFECTO 2: VISUALES Y CÁMARA
+    // ==========================================
+    // Este efecto maneja lo que se ve. Puede ejecutarse muchas veces 
+    // sin reiniciar el audio.
     useEffect(() => {
         if (currentStepIdx === -1) {
+             // Reset visual inicial
              const initialState = {};
              scene.cont.forEach((el, idx) => initialState[idx] = { visible: el.status === 'show', highlights: [] });
              setElementStates(initialState);
@@ -159,7 +232,7 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         const currentInst = scene.insts[currentStepIdx];
         if (!currentInst) return;
 
-        // 1. AUTO-ENFOQUE
+        // 1. AUTO-ENFOQUE (CÁMARA)
         if (autoPan && currentInst.tgs && currentInst.tgs.length > 0 && containerRef.current) {
             let totalX = 0, totalY = 0, count = 0;
             currentInst.tgs.forEach(tgObj => {
@@ -183,13 +256,14 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
             }
         }
 
-        // 2. CALCULAR ESTADO VISUAL
+        // 2. ESTADOS VISUALES (ELEMENTOS)
         const newState = {};
-        // Inicializar todo
         scene.cont.forEach((el, idx) => newState[idx] = { visible: el.status === 'show', highlights: [] });
 
-        // A) BUCLE HISTÓRICO: Solo para VISIBILIDAD (Que no se borre lo anterior)
-        for (let i = 0; i <= currentStepIdx; i++) {
+        // A) VISIBILIDAD: Calculamos hasta maxStepReached (Memoria Visual)
+        const visibilityLimit = Math.max(currentStepIdx, maxStepReached);
+
+        for (let i = 0; i <= visibilityLimit; i++) {
             const step = scene.insts[i];
             if (step.tgs) {
                 step.tgs.forEach(tgObj => {
@@ -198,16 +272,13 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
                     if (newState[idx]) {
                         if (tgObj.ac === 'appear') newState[idx].visible = true;
                         if (tgObj.ac === 'hide') newState[idx].visible = false;
-                        // NO aplicamos highlights aquí para evitar acumulación basura
                     }
                 });
             }
-            // Aplicar limpieza 'fin' (elementos que deben desaparecer)
             if (step.fin) step.fin.forEach(idxToHide => { if (newState[idxToHide]) newState[idxToHide].visible = false; });
         }
 
-        // B) APLICACIÓN DE HIGHLIGHTS: Solo del paso ACTUAL
-        // Esto cumple tu requisito: "que los estados (resaltado) se quiten" al cambiar de paso
+        // B) HIGHLIGHTS: Solo del paso ACTUAL
         if (currentInst.tgs) {
             currentInst.tgs.forEach(tgObj => {
                 if (tgObj.ac === 'resalt') {
@@ -231,37 +302,24 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         
         setElementStates(newState);
 
-        // 3. AUDIO
-        synth.current.cancel();
-        if (isPlaying) {
-            const utterance = new SpeechSynthesisUtterance(currentInst.msg);
-            utterance.lang = 'es-ES';
-            utterance.rate = 1.1;
-            utterance.onend = () => {
-                if (isPlaying) {
-                    if (currentStepIdx < scene.insts.length - 1) setCurrentStepIdx(prev => prev + 1);
-                    else setIsPlaying(false);
-                }
-            };
-            synth.current.speak(utterance);
-        }
-        return () => synth.current.cancel();
-
-    }, [currentStepIdx, isPlaying, scene, autoPan]);
+    }, [currentStepIdx, maxStepReached, autoPan, scene]); // <--- AQUÍ SÍ VAN ESTAS DEPENDENCIAS
 
 
     // --- MANEJADORES ---
 
     const handleJumpToStep = (stepIndex) => {
-        // Salto directo seguro
-        synth.current.cancel();
+        isManualJump.current = true;
+        synth.current.cancel(); 
         setCurrentStepIdx(stepIndex);
+        setIsPlaying(false); 
     };
 
     const handleSkip = () => {
-        // Simplemente suma 1 al índice actual
         if (currentStepIdx < scene.insts.length - 1) {
-            handleJumpToStep(currentStepIdx + 1);
+            isManualJump.current = true;
+            synth.current.cancel();
+            setCurrentStepIdx(prev => prev + 1);
+            setIsPlaying(true);
         }
     };
 
@@ -271,7 +329,14 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
             setIsPlaying(true);
         } else {
             if (currentStepIdx === -1) setCurrentStepIdx(0);
-            setIsPlaying(!isPlaying);
+            
+            if (isPlaying) {
+                isManualJump.current = true;
+                synth.current.cancel();
+                setIsPlaying(false);
+            } else {
+                setIsPlaying(true);
+            }
         }
     };
 
@@ -311,7 +376,6 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
                         const state = elementStates[idx];
                         if (!state) return null;
                         
-                        // Determinamos el índice del paso donde este elemento aparece para la navegación
                         const stepIndex = elementToStepMap[idx] || 0;
 
                         if (el.type === 'Latex') return (
@@ -319,8 +383,8 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
                                 key={idx} 
                                 data={el} 
                                 state={state} 
-                                stepIndex={stepIndex} // Pasamos el índice
-                                onClick={handleJumpToStep} // Pasamos la función de salto
+                                stepIndex={stepIndex} 
+                                onClick={handleJumpToStep} 
                             />
                         );
                         if (el.type === 'Flecha') return <ElementoFlecha key={idx} data={el} visible={state.visible} />;
@@ -329,10 +393,9 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
                     })}
                 </motion.div>
                 
-                {/* Indicador sutil de interacción */}
                 {!isPlaying && currentStepIdx > 0 && (
                     <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1 rounded-full text-xs text-slate-500 shadow-sm border flex items-center gap-2 pointer-events-none">
-                        <MousePointerClick size={14}/> Haz clic en una fórmula para volver a ese paso
+                        <MousePointerClick size={14}/> Haz clic en una fórmula para volver a su explicación
                     </div>
                 )}
             </div>
@@ -350,7 +413,7 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
 
             {/* CONTROLES */}
             <div className="bg-white p-4 border-t flex items-center justify-center gap-4 z-20 shrink-0">
-                <button onClick={() => { setIsPlaying(false); setCurrentStepIdx(-1); setPan({x:0, y:0}); }} className="p-3 text-slate-400 hover:text-indigo-600 rounded-full hover:bg-slate-50 transition" title="Reiniciar"><RefreshCw size={20}/></button>
+                <button onClick={() => { setIsPlaying(false); setCurrentStepIdx(-1); setMaxStepReached(-1); setPan({x:0, y:0}); }} className="p-3 text-slate-400 hover:text-indigo-600 rounded-full hover:bg-slate-50 transition" title="Reiniciar"><RefreshCw size={20}/></button>
                 
                 <button onClick={togglePlay} className={`flex items-center gap-3 px-8 py-3 rounded-full font-bold text-white shadow-lg transition-all hover:scale-105 active:scale-95 ${isPlaying ? 'bg-amber-500' : 'bg-indigo-600'}`}>
                     {isPlaying ? <><Pause fill="white" size={20}/> Pausar</> : <><Play fill="white" size={20}/> {currentStepIdx === -1 ? 'Comenzar' : 'Continuar'}</>}
