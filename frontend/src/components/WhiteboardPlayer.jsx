@@ -241,47 +241,51 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         
 
         // 1. AUTO-ENFOQUE (CÁMARA)
+    // 1. AUTO-ENFOQUE (CÁMARA) CORREGIDO
+// 1. AUTO-ENFOQUE (CÁMARA) - Lógica de Centroide
         if (autoPan && currentInst.tgs && currentInst.tgs.length > 0 && containerRef.current) {
-
-            let minimoX=10000
-            let maximoX=-100
-            let minimoY=10000
-            let maximoY=-100
             
+            let sumX = 0;
+            let sumY = 0;
+            let count = 0;
 
             currentInst.tgs.forEach(tgObj => {
-                //obtenemos el elemento de ese target
                 let idStr = tgObj.tg.toString().split(':')[0];
                 const idx = parseInt(idStr);
                 const element = scene.cont[idx];
-                const cantFrac=contarFrac(element)
-               
 
-                if (element) {
-                    if (element.x !== undefined) {
-                      
-                            if (element.x < minimoX) {
-                                 minimoX=element.x
-                            }
-                            if (element.x.length()*60 > maximoX) {
-                                maximoX=element.x.length()*60
-                            }
-                    } 
-                    if (element.y !=undefined) {
-                        if (element.y < minimoY) {
-                            minimoY=element.y
-                        } 
-                        if (element.y+(cantFrac*40) > maximoX) {
-                            maximoY=element.y+(cantFrac*40)
-                        }
-                    }
+                if (element && element.x !== undefined && element.y !== undefined) {
+                    sumX += element.x;
+                    sumY += element.y;
+                    count++;
                 }
             });
 
-            let newPanX=(width-(Math.abs(maximoX-minimoX)))/2
-            let newPanY=(height-(Math.abs(maximoY-minimoY)))/2
-            setPan({ x: newPanX, y: newPanY });  
-            
+            if (count > 0) {
+                // 1. Calculamos el promedio de las posiciones (El centro del grupo)
+                const targetX = sumX / count;
+                const targetY = sumY / count;
+
+                // 2. Obtenemos dimensiones reales del contenedor
+                const screenW = containerRef.current.clientWidth;
+                const screenH = containerRef.current.clientHeight;
+
+                // 3. CONSTANTES DE CALIBRACIÓN (Ajusta esto si sigue mal)
+                // Si se ve muy a la derecha, aumenta este valor negativo (ej: -100)
+                // Si se ve muy a la izquierda, ponlo positivo (ej: 50)
+                const OFFSET_X = -150; 
+                
+                // Ajuste vertical para dejar espacio a los subtítulos
+                const OFFSET_Y = -50; 
+
+                // 4. FÓRMULA FINAL
+                // Queremos que: Pan + Target = CentroPantalla
+                // Por tanto: Pan = CentroPantalla - Target
+                const newPanX = (screenW / 2) - targetX + OFFSET_X;
+                const newPanY = (screenH / 2) - targetY + OFFSET_Y;
+
+                setPan({ x: newPanX, y: newPanY });
+            }
         }
 
         // 2. ESTADOS VISUALES (ELEMENTOS)
