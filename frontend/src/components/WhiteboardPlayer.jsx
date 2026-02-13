@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { InlineMath } from 'react-katex';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RefreshCw, LocateFixed, Video, VideoOff, SkipForward, MousePointerClick } from 'lucide-react';
+import { useContainerDimensions } from '../hooks/useContainerDimensions';
 import 'katex/dist/katex.min.css';
 
 // --- 1. FUNCIÓN DE INYECCIÓN DE COLORES ---
@@ -120,7 +121,9 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
     const isManualJump = useRef(false);
 
     const scene = scenes[currentSceneIdx];
-
+    
+    // 2. Usas el hook pasándole la referencia del contenedor
+    const { width, height, isMobile } = useContainerDimensions(containerRef);
     // Mapa de navegación
     const elementToStepMap = useMemo(() => {
         const map = {};
@@ -232,28 +235,53 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         const currentInst = scene.insts[currentStepIdx];
         if (!currentInst) return;
 
+        const contarFrac=(element)=>{
+            console.log(element.cont.split("frac").length)
+            return element.cont.split("frac").length}
+        
+
         // 1. AUTO-ENFOQUE (CÁMARA)
         if (autoPan && currentInst.tgs && currentInst.tgs.length > 0 && containerRef.current) {
-            let totalX = 0, totalY = 0, count = 0;
+
+            let minimoX=10000
+            let maximoX=-100
+            let minimoY=10000
+            let maximoY=-100
+            
+
             currentInst.tgs.forEach(tgObj => {
+                //obtenemos el elemento de ese target
                 let idStr = tgObj.tg.toString().split(':')[0];
                 const idx = parseInt(idStr);
                 const element = scene.cont[idx];
+                const cantFrac=contarFrac(element)
+               
+
                 if (element) {
                     if (element.x !== undefined) {
-                        totalX += element.x; totalY += element.y; count++;
-                    } else if (element.x1 !== undefined) {
-                        totalX += (element.x1 + element.x2) / 2; totalY += (element.y1 + element.y2) / 2; count++;
+                      
+                            if (element.x < minimoX) {
+                                 minimoX=element.x
+                            }
+                            if (element.x.length()*60 > maximoX) {
+                                maximoX=element.x.length()*60
+                            }
+                    } 
+                    if (element.y !=undefined) {
+                        if (element.y < minimoY) {
+                            minimoY=element.y
+                        } 
+                        if (element.y+(cantFrac*40) > maximoX) {
+                            maximoY=element.y+(cantFrac*40)
+                        }
                     }
                 }
             });
 
-            if (count > 0) {
-                const { clientWidth, clientHeight } = containerRef.current;
-                const newPanX = (clientWidth / 2) - (totalX / count);
-                const newPanY = (clientHeight / 2) - (totalY / count) - 50;
-                setPan({ x: newPanX, y: newPanY });
-            }
+            let newPanX=(width-(Math.abs(maximoX-minimoX)))/2
+            let newPanY=(height-(Math.abs(maximoY-minimoY)))/2
+            setPan({ x: newPanX, y: newPanY });  
+            
         }
 
         // 2. ESTADOS VISUALES (ELEMENTOS)
