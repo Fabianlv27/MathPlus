@@ -6,7 +6,7 @@ import WhiteboardPlayer from './components/WhiteboardPlayer'; // <-- IMPORTA EST
 import { useMathTutor } from './hooks/useMathTutor';
 import { Upload, FileText } from 'lucide-react';
 import {calculateFramePositions} from '../utils/layoutEngine'
-import { fixLatexHighlighting } from '../utils/latexFixer';
+import { fixLatexHighlighting,preventCollisions } from '../utils/latexFixer';
 import SidebarRecursos from './components/SidebarComponent'
 // ... (Aquí iría el const WHITEBOARD_MOCK_DATA que te di arriba) ...
 
@@ -21,109 +21,158 @@ function App() {
 
 const WHITEBOARD_MOCK_DATA =[
   {
-    "ig": "Simplificación Logarítmica",
+    "ig": "Ecuación con Radicales: \\sqrt{2x + 7} - x = 2",
     "cont": [
-      { "type": "Latex", "cont": "\\frac{\\log_4 25}{2} - \\frac{1}{2} - \\log_4 40", "x": 400, "y": 100, "status": "hide" },
-      { "type": "Latex", "cont": "\\log_4 5 - \\frac{1}{2} - \\log_4 40", "x": 400, "y": 180, "status": "hide" },
-      { "type": "Latex", "cont": "\\log_4 5 - \\log_4 40 - \\frac{1}{2}", "x": 400, "y": 260, "status": "hide" },
-      { "type": "Latex", "cont": "\\log_4(\\frac{5}{40}) - \\frac{1}{2}", "x": 400, "y": 340, "status": "hide" },
-      { "type": "Latex", "cont": "\\log_4(\\frac{1}{8}) - \\frac{1}{2}", "x": 400, "y": 420, "status": "hide" },
-      { "type": "Latex", "cont": "-\\frac{3}{2} - \\frac{1}{2}", "x": 400, "y": 500, "status": "hide" },
-      { "type": "Latex", "cont": "-2", "x": 400, "y": 580, "status": "hide" }
+      { "type": "Latex", "cont": "\\sqrt{2x + 7} - x = 2", "x": 350, "y": 100, "status": "show" },
+      { "type": "Latex", "cont": "\\sqrt{2x + 7} = x + 2", "x": 350, "y": 200, "status": "hide" },
+      { "type": "Latex", "cont": "2x + 7 = (x + 2)^2", "x": 350, "y": 300, "status": "hide" },
+      
+      { "type": "Flecha", "x": 550, "y": 300, "toX": 700, "toY": 300, "status": "hide" },
+      { "type": "Latex", "cont": "(x+2)^2 = x^2 + 4x + 4", "x": 750, "y": 300, "status": "hide" },
+      { "type": "Flecha", "x": 700, "y": 300, "toX": 550, "toY": 380, "status": "hide" },
+      
+      { "type": "Latex", "cont": "2x + 7 = x^2 + 4x + 4", "x": 350, "y": 380, "status": "hide" },
+      { "type": "Latex", "cont": "x^2 + 2x - 3 = 0", "x": 350, "y": 460, "status": "hide" },
+      
+      { "type": "Flecha", "x": 550, "y": 460, "toX": 700, "toY": 460, "status": "hide" },
+      { "type": "Latex", "cont": "3 \\cdot (-1) = -3 \\text{ y } 3 + (-1) = 2", "x": 750, "y": 460, "status": "hide" },
+      { "type": "Flecha", "x": 700, "y": 460, "toX": 550, "toY": 540, "status": "hide" },
+      
+      { "type": "Latex", "cont": "(x+3)(x-1) = 0", "x": 350, "y": 540, "status": "hide" },
+      { "type": "Latex", "cont": "x = -3 \\quad \\lor \\quad x = 1", "x": 350, "y": 620, "status": "hide" },
+      
+      { "type": "Flecha", "x": 600, "y": 620, "toX": 720, "toY": 620, "status": "hide" },
+      { "type": "Latex", "cont": "x=-3 \\Rightarrow \\sqrt{1} - (-3) = 4 \\neq 2", "x": 780, "y": 620, "status": "hide" },
+      { "type": "Flecha", "x": 720, "y": 620, "toX": 550, "toY": 720, "status": "hide" },
+      
+      { "type": "Latex", "cont": "x = 1", "x": 350, "y": 720, "status": "hide" }
     ],
     "resources": [
-      { 
-        "step": 1, 
-        "title": "Propiedad de la Potencia", 
-        "tex": "n \\cdot \\log_b(x) = \\log_b(x^n)" 
-      },
-      { 
-        "step": 3, 
-        "title": "Propiedad del Cociente", 
-        "tex": "\\log_b(x) - \\log_b(y) = \\log_b(\\frac{x}{y})" 
-      },
-      { 
-        "step": 5, 
-        "title": "Definición de Logaritmo", 
-        "tex": "\\log_b(y) = x \\iff b^x = y" 
-      }
+      { "step": 2, "title": "Potencia de una Raíz", "tex": "(\\sqrt{a})^2 = a" },
+      { "step": 3, "title": "Binomio al Cuadrado", "tex": "(a+b)^2 = a^2 + 2ab + b^2" },
+      { "step": 9, "title": "Soluciones Extrañas", "tex": "\\text{Al elevar al cuadrado, verificar raíces.}" }
     ],
     "insts": [
       {
-        "msg": "Comenzamos con la expresión original.",
+        "msg": "Iniciamos con nuestra ecuación con radical. El primer paso siempre es aislar la raíz.",
         "tgs": [
           { "tg": "0:(0-f)", "ac": "appear" }
         ],
         "fin": []
       },
       {
-        "msg": "Aplicamos la regla de la potencia: dividir por 2 es raíz cuadrada (√25 = 5).",
+        "msg": "Sumamos 'x' a ambos lados para dejar la raíz cuadrada completamente sola a la izquierda.",
         "tgs": [
           { "tg": "0:(0-f)", "ac": "dim" },
-          { "tg": "0:(0-18)", "ac": "resalt", "color": "#FCD34D" },
           { "tg": "1:(0-f)", "ac": "appear" },
-          { "tg": "1:(0-7)", "ac": "resalt", "color": "#4ADE80" }
+          { "tg": "1:(0-f)", "ac": "resalt", "color": "#FCD34D" }
         ],
         "fin": []
       },
       {
-        "msg": "Reordenamos los términos para agrupar los logaritmos.",
+        "msg": "Elevamos ambos lados de la ecuación al cuadrado para eliminar la raíz cuadrada.",
         "tgs": [
           { "tg": "1:(0-f)", "ac": "dim" },
-          { "tg": "2:(0-f)", "ac": "appear" }
+          { "tg": "2:(0-f)", "ac": "appear" },
+          { "tg": "2:(0-f)", "ac": "resalt", "color": "#FCD34D" }
         ],
         "fin": []
       },
       {
-        "msg": "Restar logaritmos de la misma base equivale al logaritmo del cociente.",
+        "msg": "Desarrollamos el binomio al cuadrado en nuestra pizarra auxiliar.",
         "tgs": [
           { "tg": "2:(0-f)", "ac": "dim" },
-          { "tg": "2:(0-6)", "ac": "resalt", "color": "#FCD34D" },
-          { "tg": "2:(10-18)", "ac": "resalt", "color": "#FCD34D" },
           { "tg": "3:(0-f)", "ac": "appear" },
-          { "tg": "3:(0-16)", "ac": "resalt", "color": "#4ADE80" }
-        ],
-        "fin": []
-      },
-      {
-        "msg": "Simplificamos la fracción dentro del logaritmo: 5/40 = 1/8.",
-        "tgs": [
-          { "tg": "3:(0-f)", "ac": "dim" },
           { "tg": "4:(0-f)", "ac": "appear" },
-          { "tg": "4:(6-11)", "ac": "resalt", "color": "#4ADE80" }
+          { "tg": "4:(0-f)", "ac": "resalt", "color": "#FCD34D" }
         ],
         "fin": []
       },
       {
-        "msg": "Evaluamos: 4 elevado a qué potencia da 1/8? (-3/2).",
+        "msg": "Sustituimos el trinomio resultante de vuelta en nuestra ecuación principal.",
         "tgs": [
           { "tg": "4:(0-f)", "ac": "dim" },
-          { "tg": "4:(0-12)", "ac": "resalt", "color": "#FCD34D" },
           { "tg": "5:(0-f)", "ac": "appear" },
-          { "tg": "5:(0-10)", "ac": "resalt", "color": "#4ADE80" }
+          { "tg": "6:(0-f)", "ac": "appear" },
+          { "tg": "6:(0-f)", "ac": "resalt", "color": "#FCD34D" }
+        ],
+        "fin": [3]
+      },
+      {
+        "msg": "Agrupamos todos los términos a un solo lado para formar una ecuación cuadrática igualada a cero.",
+        "tgs": [
+          { "tg": "6:(0-f)", "ac": "dim" },
+          { "tg": "7:(0-f)", "ac": "appear" },
+          { "tg": "7:(0-f)", "ac": "resalt", "color": "#FCD34D" }
+        ],
+        "fin": [5]
+      },
+      {
+        "msg": "Buscamos dos números que multiplicados den -3 y sumados den +2 para factorizar.",
+        "tgs": [
+          { "tg": "7:(0-f)", "ac": "dim" },
+          { "tg": "8:(0-f)", "ac": "appear" },
+          { "tg": "9:(0-f)", "ac": "appear" },
+          { "tg": "9:(0-f)", "ac": "resalt", "color": "#FCD34D" }
         ],
         "fin": []
       },
       {
-        "msg": "Sumamos las fracciones negativas: -1.5 - 0.5 = -2.",
+        "msg": "Escribimos la ecuación factorizada usando los números que encontramos (3 y -1).",
         "tgs": [
-          { "tg": "5:(0-f)", "ac": "dim" },
-          { "tg": "6:(0-f)", "ac": "appear" },
-          { "tg": "6:(0-f)", "ac": "resalt", "color": "#4ADE80" }
+          { "tg": "9:(0-f)", "ac": "dim" },
+          { "tg": "10:(0-f)", "ac": "appear" },
+          { "tg": "11:(0-f)", "ac": "appear" },
+          { "tg": "11:(0-f)", "ac": "resalt", "color": "#FCD34D" }
+        ],
+        "fin": [8]
+      },
+      {
+        "msg": "Igualando cada factor a cero obtenemos dos posibles soluciones.",
+        "tgs": [
+          { "tg": "11:(0-f)", "ac": "dim" },
+          { "tg": "12:(0-f)", "ac": "appear" },
+          { "tg": "12:(0-f)", "ac": "resalt", "color": "#FCD34D" }
+        ],
+        "fin": [10]
+      },
+      {
+        "msg": "¡Cuidado! Al elevar al cuadrado pudimos generar soluciones extrañas. Verificamos x = -3 y vemos que no cumple la igualdad original.",
+        "tgs": [
+          { "tg": "12:(0-f)", "ac": "dim" },
+          { "tg": "13:(0-f)", "ac": "appear" },
+          { "tg": "14:(0-f)", "ac": "appear" },
+          { "tg": "14:(0-f)", "ac": "resalt", "color": "#EF4444" }
         ],
         "fin": []
+      },
+      {
+        "msg": "Descartamos la solución extraña. Nuestra única solución real y válida es x = 1.",
+        "tgs": [
+          { "tg": "14:(0-f)", "ac": "dim" },
+          { "tg": "15:(0-f)", "ac": "appear" },
+          { "tg": "16:(0-f)", "ac": "appear" },
+          { "tg": "16:(0-f)", "ac": "resalt", "color": "#4ADE80" }
+        ],
+        "fin": [13]
       }
     ]
   }
 ]
-        // 2. PROCESAMIENTO EN CADENA
-       const perfectSolution = useMemo(() => {
-      console.log("Calculando solución perfecta..."); // Solo deberías ver esto una vez
+const perfectSolution = useMemo(() => {
+      console.log("Calculando solución perfecta y verificando colisiones..."); 
+      
       return WHITEBOARD_MOCK_DATA.map(scene => {
-          const fixed = fixLatexHighlighting(scene);
-          return calculateFramePositions(fixed);
+          // Paso 1: Arregla los problemas del Latex (Rangos de colores)
+          const fixedColors = fixLatexHighlighting(scene);
+          
+          // Paso 2: VERIFICACIÓN GEOMÉTRICA (La que acabamos de crear)
+          const spacedOut = preventCollisions(fixedColors);
+          
+          // Paso 3: Calcular coordenadas de Marcos y Flechas usando las posiciones ya corregidas
+          return calculateFramePositions(spacedOut);
       });
-  }, [])
+  }, []);
   // Usamos el hook para la lógica de API (opcional por ahora si usas Mock)
   const { 
     solveProblem, 

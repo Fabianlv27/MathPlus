@@ -1,4 +1,154 @@
-[
+
+const WHITEBOARD_MOCK_DATA = [
+  {
+    "ig": "Simplificación Logarítmica Detallada",
+    "cont": [
+      // --- COLUMNA PRINCIPAL (x: 350) ---
+      { "type": "Latex", "cont": "\\frac{\\log_4 25}{2} - \\frac{1}{2} - \\log_4 40", "x": 350, "y": 100, "status": "hide" },
+      { "type": "Latex", "cont": "\\log_4 5 - \\frac{1}{2} - \\log_4 40", "x": 350, "y": 180, "status": "hide" },
+      { "type": "Latex", "cont": "\\log_4 5 - \\log_4 40 - \\frac{1}{2}", "x": 350, "y": 260, "status": "hide" },
+      { "type": "Latex", "cont": "\\log_4(\\frac{5}{40}) - \\frac{1}{2}", "x": 350, "y": 340, "status": "hide" },
+      { "type": "Latex", "cont": "\\log_4(\\frac{1}{8}) - \\frac{1}{2}", "x": 350, "y": 420, "status": "hide" }, // De aquí nace el cálculo auxiliar
+      
+      // --- COLUMNA AUXILIAR (x: 650) ---
+      // Alineamos la primera parte del cálculo auxiliar a la misma altura (y: 420)
+      { "type": "Latex", "cont": "\\log_{2^2}(2^{-3})", "x": 650, "y": 420, "status": "hide" },
+      { "type": "Latex", "cont": "\\frac{-3}{2} \\cdot \\log_2(2)", "x": 650, "y": 500, "status": "hide" },
+      { "type": "Latex", "cont": "-\\frac{3}{2}", "x": 650, "y": 580, "status": "hide" },
+      
+      // --- VUELTA A LA COLUMNA PRINCIPAL (x: 350) ---
+      // Retomamos la ecuación principal en el siguiente renglón disponible (y: 500)
+      { "type": "Latex", "cont": "-\\frac{3}{2} - \\frac{1}{2}", "x": 350, "y": 500, "status": "hide" },
+      { "type": "Latex", "cont": "-2", "x": 350, "y": 580, "status": "hide" }
+    ],
+    "resources": [
+      { 
+        "step": 1, 
+        "title": "Propiedad de la Potencia", 
+        "tex": "n \\cdot \\log_b(x) = \\log_b(x^n)" 
+      },
+      { 
+        "step": 3, 
+        "title": "Propiedad del Cociente", 
+        "tex": "\\log_b(x) - \\log_b(y) = \\log_b(\\frac{x}{y})" 
+      },
+      { 
+        "step": 5, 
+        "title": "Cambio de Base (Truco)", 
+        "tex": "4=2^2, \\quad 8=2^3" 
+      },
+      { 
+        "step": 7, // Ajustado al paso donde se sacan los exponentes
+        "title": "Propiedad del Logaritmo", 
+        "tex": "\\log_{b^n}(b^m) = \\frac{m}{n}" 
+      }
+    ],
+    "insts": [
+      {
+        "msg": "Comenzamos con la expresión original.",
+        "tgs": [ { "tg": "0:(0-f)", "ac": "appear" } ],
+        "fin": []
+      },
+      {
+        "msg": "Aplicamos la regla de la potencia: dividir por 2 es raíz cuadrada (√25 = 5).",
+        "tgs": [
+          { "tg": "0:(0-f)", "ac": "dim" },
+          { "tg": "0:(0-18)", "ac": "resalt", "color": "#FCD34D" },
+          { "tg": "1:(0-f)", "ac": "appear" },
+          { "tg": "1:(0-7)", "ac": "resalt", "color": "#4ADE80" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Reordenamos los términos para agrupar los logaritmos.",
+        "tgs": [
+          { "tg": "1:(0-f)", "ac": "dim" },
+          { "tg": "2:(0-f)", "ac": "appear" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Restar logaritmos de la misma base equivale al logaritmo del cociente.",
+        "tgs": [
+          { "tg": "2:(0-f)", "ac": "dim" },
+          { "tg": "2:(0-6)", "ac": "resalt", "color": "#FCD34D" },
+          { "tg": "2:(10-18)", "ac": "resalt", "color": "#FCD34D" },
+          { "tg": "3:(0-f)", "ac": "appear" },
+          { "tg": "3:(0-16)", "ac": "resalt", "color": "#4ADE80" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Simplificamos la fracción dentro del logaritmo: 5/40 es igual a 1/8.",
+        "tgs": [
+          { "tg": "3:(0-f)", "ac": "dim" },
+          { "tg": "4:(0-f)", "ac": "appear" },
+          { "tg": "4:(6-11)", "ac": "resalt", "color": "#4ADE80" }
+        ],
+        "fin": []
+      },
+      
+      // --- INICIO DE LA EXPLICACIÓN DETALLADA (AL MARGEN) ---
+      
+      {
+        "msg": "¡Alto aquí! Resolvamos este logaritmo por separado a la derecha. Expresaremos todo en base 2. El 4 es 2 al cuadrado.",
+        "tgs": [
+          { "tg": "4:(0-f)", "ac": "dim" },
+          { "tg": "4:(0-12)", "ac": "resalt", "color": "#FCD34D" }, 
+          { "tg": "5:(0-f)", "ac": "appear" },
+          { "tg": "5:(3-6)", "ac": "resalt", "color": "#4ADE80" } 
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Y el 8 es 2 al cubo. Como el 8 está abajo dividiendo, su exponente pasa a ser negativo, es decir, -3.",
+        "tgs": [
+          { "tg": "5:(3-6)", "ac": "resalt", "color": "#1e293b" }, 
+          { "tg": "5:(7-11)", "ac": "resalt", "color": "#4ADE80" }  
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Ahora usamos un truco: sacamos los exponentes hacia afuera como una fracción. El -3 va arriba y el 2 va abajo.",
+        "tgs": [
+          { "tg": "5:(0-f)", "ac": "dim" },
+          { "tg": "6:(0-f)", "ac": "appear" },
+          { "tg": "6:(0-4)", "ac": "resalt", "color": "#4ADE80" } 
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Como el logaritmo de 2 en base 2 vale 1, simplemente nos queda la fracción -3/2.",
+        "tgs": [
+          { "tg": "6:(0-f)", "ac": "dim" },
+          { "tg": "7:(0-f)", "ac": "appear" }
+        ],
+        "fin": []
+      },
+      {
+        "msg": "Ahora que sabemos cuánto vale esa parte, la ponemos de vuelta en nuestra ecuación principal, a la izquierda.",
+        "tgs": [
+          { "tg": "7:(0-f)", "ac": "dim" },
+          { "tg": "8:(0-f)", "ac": "appear" },
+          { "tg": "8:(0-4)", "ac": "resalt", "color": "#4ADE80" } 
+        ],
+        "fin": [] // <- QUITO EL BORRADO AQUÍ. Así la columna de la derecha se queda visible.
+      },
+      
+      // --- FIN DEL DESGLOSE ---
+
+      {
+        "msg": "Finalmente restamos ambas fracciones: -1.5 menos 0.5 es igual a -2.",
+        "tgs": [
+          { "tg": "8:(0-f)", "ac": "dim" },
+          { "tg": "9:(0-f)", "ac": "appear" }
+        ],
+        "fin": []
+      }
+    ]
+  }
+] 
+const a=[
     {
         "ig": "Resolución de Ecuaciones de Primer Grado",
         "cont": [
@@ -79,7 +229,7 @@
 
 ]
 
-const WHITEBOARD_MOCK_DATA = [
+const WHITEBOARD_MOCK_DATAs = [
     {
         "ig": "primero debemos saber que es el metodo de factorizacion por termino medio",
         "cont": [

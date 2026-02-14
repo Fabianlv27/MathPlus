@@ -171,3 +171,104 @@ export const fixLatexHighlighting = (scene) => {
     });
     return newScene;
 };
+
+// --- 1. ESTIMADOR DE DIMENSIONES ---
+// Calcula el ancho y alto aproximado de una fórmula LaTeX
+const estimateDimensions = (latex) => {
+    if (!latex) return { w: 0, h: 0 };
+    
+    // Limpiamos los comandos largos (ej: \log, \frac, \sqrt) reemplazándolos por una sola letra 'X'
+    // Esto evita que comandos invisibles sumen ancho ficticio
+    const cleanLatex = latex.replace(/\\[a-zA-Z]+/g, 'X'); 
+    
+    // Asignamos ~14px de ancho por cada carácter visible, más 40px de padding base
+    const w = (cleanLatex.length * 14) + 40; 
+    
+    // Asignamos 50px de altura base, y añadimos 45px extra por cada fracción que encontremos
+    const fracCount = (latex.match(/\\frac/g) || []).length;
+    const h = 50 + (fracCount * 45); 
+    
+    return { w, h };
+};
+
+// --- 2. PREVENTOR DE COLISIONES (MOTOR) ---
+export const preventCollisions = (scene) => {
+    // Clonamos la escena para no mutar el estado original
+    const newScene = JSON.parse(JSON.stringify(scene));
+
+    // A) Enriquecer elementos con "Cajas de Colisión" y agruparlos por columna (X)
+    const columns = {};
+    
+    newScene.cont.forEach((el) => {
+        if (el.type !== 'Latex') return;
+        
+        const { w, h } = estimateDimensions(el.cont);
+        
+        // Guardamos las cajas temporales (recordando que 'x' e 'y' son el centro)
+        el._left = el.x - (w / 2);
+        el._right = el.x + (w / 2);
+        el._top = el.y - (h / 2);
+        el._bottom = el.y + (h / 2);
+
+        // Agrupamos por coordenada X (Los que tienen la misma X están "relacionados")
+        if (!columns[el.x]) columns[el.x] = [];
+        columns[el.x].push(el);
+    });
+
+    // B) Ordenar las columnas de izquierda a derecha (ej: [350, 650])
+    const sortedX = Object.keys(columns).map(Number).sort((a, b) => a - b);
+
+    // C) Revisar colisiones de izquierda a derecha
+    for (let i = 1; i < sortedX.length; i++) {
+        const currentX = sortedX[i];
+        const currentColumn = columns[currentX];
+        let maxShift = 0; // Cuánto necesitamos empujar esta columna
+
+        // Comparamos esta columna contra todas las que están a su izquierda
+        for (let j = 0; j < i; j++) {
+            const prevX = sortedX[j];
+            const prevColumn = columns[prevX];
+
+            currentColumn.forEach(currEl => {
+                prevColumn.forEach(prevEl => {
+                    // ¿Se superponen verticalmente (Y)? Si no están en la misma línea, no chocan
+                    const overlapY = (currEl._top < prevEl._bottom) && (currEl._bottom > prevEl._top);
+
+                    if (overlapY) {
+                        // Queremos un margen seguro de 40px entre ecuaciones
+                        const safeMargin = 40; 
+                        const requiredLeft = prevEl._right + safeMargin;
+
+                        // Si el lado izquierdo de nuestro elemento actual está pisando el derecho del anterior
+                        if (currEl._left < requiredLeft) {
+                            const shift = requiredLeft - currEl._left;
+                            if (shift > maxShift) {
+                                maxShift = shift; // Guardamos el empuje más grande necesario
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        // D) Si hubo colisión, empujamos a TODOS los elementos relacionados (toda su columna)
+        if (maxShift > 0) {
+            currentColumn.forEach(el => {
+                el.x += maxShift;       // Movemos el centro real
+                el._left += maxShift;   // Actualizamos su caja temporal
+                el._right += maxShift;
+            });
+            console.log(`Colisión detectada. Columna en X=${currentX} fue empujada ${maxShift}px a la derecha.`);
+        }
+    }
+
+    // E) Limpiar propiedades temporales para no ensuciar el JSON final
+    newScene.cont.forEach(el => {
+        delete el._left;
+        delete el._right;
+        delete el._top;
+        delete el._bottom;
+    });
+
+    return newScene;
+};
