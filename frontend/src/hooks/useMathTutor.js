@@ -20,7 +20,6 @@ export const useMathTutor = () => {
     formData.append('query', finalQuery);
 
     try {
-      // Ajusta la URL a tu backend FastAPI
       const res = await axios.post('http://localhost:8000/api/v1/solve', formData);
       setSolution(res.data);
       setCurrentStep(0);

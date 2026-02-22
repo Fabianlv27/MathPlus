@@ -1,3 +1,4 @@
+import json
 import os
 from typing import TypedDict, Annotated
 from langgraph.graph import StateGraph, END
@@ -5,60 +6,70 @@ from app.core.config import settings
 from langchain_groq import ChatGroq
 from app.models.schemas import SolucionMath
 from app.agents.prompts import VALIDATOR_PROMPT, SOLVER_PROMPT, UX_PROMPT
-
+from google import genai
+from google.genai import types
 # 1. Definir el Estado del Grafo (La memoria compartida entre agentes)
 class AgentState(TypedDict):
     user_input: str
     is_valid_math: bool
     solution_raw: str
     final_json: dict
-
+    
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
 # Para validación rápida
 llm_fast = ChatGroq(
-    api_key=settings.GROQ_API_KEY,  # <--- AQUÍ ESTÁ LA SOLUCIÓN
+    api_key=settings.GROQ_API_KEY,
     model="llama-3.1-8b-instant", 
     temperature=0
 )
- # Para resolver
 
-llm_smart = ChatGroq(
-    api_key=settings.GROQ_API_KEY,  # <--- AQUÍ TAMBIÉN
+llm_resolver=ChatGroq(
+    api_key=settings.GROQ_API_KEY,
     model="llama-3.3-70b-versatile", 
-    temperature=0.2
+    temperature=0.1
 )
-# 3. Definir Nodos (Las funciones de cada agente)
 
-def validator_node(state: AgentState):
+structured_scripter = llm_resolver.with_structured_output(SolucionMath,method="json_mode")
+
+async def validator_node(state: AgentState):
     """Verifica si el input es matemáticas."""
-    response = llm_fast.invoke(f"{VALIDATOR_PROMPT}\nInput: {state['user_input']}")
-    # Asumimos que el prompt fuerza una respuesta "YES" o "NO" o un JSON simple
+    response = await llm_fast.ainvoke(f"{VALIDATOR_PROMPT}\nInput: {state['user_input']}")
+    print(f"Validator response: {response.content.strip()}")
     is_valid = "YES" in response.content.upper()
     return {"is_valid_math": is_valid}
 
-def solver_node(state: AgentState):
-    """Resuelve el problema matemáticamente."""
-    response = llm_smart.invoke(f"{SOLVER_PROMPT}\nProblema: {state['user_input']}")
-    return {"solution_raw": response.content}
+async def solver_node(state: AgentState):
+   """Resuelve el problema matemático y guarda la solución cruda."""
+   
+   prompt=f"{SOLVER_PROMPT}\nProblema: {state['user_input']}"
+   response= await llm_resolver.ainvoke(prompt)
+   return {"solution_raw": response.content}
 
-def ux_scripter_node(state: AgentState):
+
+async def ux_scripter_node(state: AgentState):
     """Convierte la solución en pasos JSON para el Frontend."""
-    # Usamos .with_structured_output para forzar el esquema Pydantic (genial en Groq)
-    structured_llm = llm_smart.with_structured_output(SolucionMath)
+    prompt = f"{UX_PROMPT}\nSolución Base (Básate en esto para crear los pasos):\n{state['solution_raw']}"
+    try:
+        
+        response = await structured_scripter.ainvoke(prompt)
+        if hasattr(response, 'model_dump'):
+            final_json = response.model_dump()
+        else:
+            final_json = json.loads(response.content)
+    except Exception as e:
+        print(f"Error al parsear JSON: {e}")
+        return {"final_json": {"escenas": []}}
+    return {"final_json": final_json}
     
-    json_result = structured_llm.invoke(
-        f"{UX_PROMPT}\nSolución Base: {state['solution_raw']}"
-    )
-    return {"final_json": json_result.dict()}
+    
 
-# 4. Construir el Grafo
 workflow = StateGraph(AgentState)
 
 workflow.add_node("validator", validator_node)
 workflow.add_node("solver", solver_node)
 workflow.add_node("ux_scripter", ux_scripter_node)
 
-# 5. Definir el flujo (Aristas)
 workflow.set_entry_point("validator")
 
 def check_validity(state: AgentState):
@@ -74,9 +85,7 @@ workflow.add_conditional_edges(
         END: END
     }
 )
-
-workflow.add_edge("solver", "ux_scripter")
+workflow.add_edge("solver","ux_scripter")
 workflow.add_edge("ux_scripter", END)
 
-# 6. Compilar
 app_graph = workflow.compile()

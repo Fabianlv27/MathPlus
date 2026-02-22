@@ -272,3 +272,67 @@ export const preventCollisions = (scene) => {
 
     return newScene;
 };
+
+// Añade esto en layoutEngine.js
+
+export const calculateArrowPositions = (scene) => {
+    const newScene = JSON.parse(JSON.stringify(scene));
+
+    newScene.cont.forEach((el) => {
+        // Buscamos flechas que tengan definidos un origen (from) y un destino (to)
+        if (el.type === 'Flecha' && el.from !== undefined && el.to !== undefined) {
+            const source = newScene.cont[el.from];
+            const target = newScene.cont[el.to];
+
+            if (source && target) {
+                // 1. Calculamos el tamaño de los elementos a conectar
+                // (Asegúrate de que estimateDimensions esté accesible en este archivo)
+                const sourceDim = estimateDimensions(source.cont);
+                const targetDim = estimateDimensions(target.cont);
+
+                // 2. Definimos los bordes con un margen de seguridad (15px)
+                const margin = 15;
+                const sRight = source.x + (sourceDim.w / 2) + margin;
+                const sLeft = source.x - (sourceDim.w / 2) - margin;
+                const sBottom = source.y + (sourceDim.h / 2) + margin;
+                
+                const tLeft = target.x - (targetDim.w / 2) - margin;
+                const tRight = target.x + (targetDim.w / 2) + margin;
+                const tTop = target.y - (targetDim.h / 2) - margin;
+
+                // 3. LÓGICA DE ENRUTAMIENTO GEOMÉTRICO
+                
+                // A) Ida hacia la derecha (Ej: Columna Principal -> Auxiliar)
+                if (source.x < target.x && source.y === target.y) {
+                    el.x = sRight;           // Nace en el borde derecho
+                    el.y = source.y;
+                    el.toX = tLeft;          // Muere en el borde izquierdo
+                    el.toY = target.y;
+                }
+                // B) Vuelta diagonal (Ej: Auxiliar -> Principal abajo)
+                else if (source.x > target.x && source.y < target.y) {
+                    el.x = sLeft;            // Nace en el borde izquierdo
+                    el.y = source.y;
+                    el.toX = target.x + (targetDim.w / 4); // Apunta un poco a la derecha del centro del destino
+                    el.toY = tTop;           // Muere en el borde superior
+                }
+                // C) Descenso vertical directo (En la misma columna)
+                else if (source.x === target.x && source.y < target.y) {
+                    el.x = source.x;
+                    el.y = sBottom;          // Nace en el borde inferior
+                    el.toX = target.x;
+                    el.toY = tTop;           // Muere en el borde superior
+                }
+                // D) Cualquier otro caso (Fallback genérico de centro a centro)
+                else {
+                    el.x = source.x;
+                    el.y = source.y;
+                    el.toX = target.x;
+                    el.toY = target.y;
+                }
+            }
+        }
+    });
+
+    return newScene;
+};

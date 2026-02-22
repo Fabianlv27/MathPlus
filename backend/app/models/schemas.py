@@ -7,10 +7,44 @@ class PasoAnimacion(BaseModel):
     elementos_foco: List[str] = Field(description="IDs de elementos a resaltar")
     accion_dom: Literal['aparecer', 'mover', 'resaltar', 'desaparecer', 'ninguna']
 
+# app/models/schemas.py
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+class TgElement(BaseModel):
+    tg: str
+    ac: str
+    color: Optional[str] = None
+
+class InstElement(BaseModel):
+    msg: str
+    tgs: List[TgElement]
+    fin: Optional[List[int] ]= None
+
+class ContElement(BaseModel):
+    type: str
+    cont: Optional[str] = None
+    x: float
+    y: float
+    toX: Optional[float] = None
+    toY: Optional[float] = None
+    apart: Optional[str] = None
+    status: str
+
+class ResourceElement(BaseModel):
+    step: int
+    title: str
+    tex: str
+
+class Escena(BaseModel):
+    ig: str
+    cont: List[ContElement]
+    resources: Optional[List[ResourceElement]] = None
+    insts: List[InstElement]
+
+# Este será el modelo principal que exportarás y usarás en tu router/graph
 class SolucionMath(BaseModel):
-    es_matematico: bool = Field(description="True si es un problema matemático válido")
-    explicacion_general: str
-    pasos: List[PasoAnimacion]
+    escenas: List[Escena]
     
 # Input que recibe tu API
 class UserRequest(BaseModel):

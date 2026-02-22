@@ -4,10 +4,10 @@ from app.models.schemas import SolucionMath
 from app.agents.graph import app_graph
 from app.services.ocr import extract_text_from_pdf
 from app.services.pdf_gen import generate_solution_pdf
+from app.data.default import default
 
 router = APIRouter()
 
-@router.post("/solve", response_model=SolucionMath)
 async def solve_problem(
     query: str = Form(None), 
     file: UploadFile = File(None)
@@ -37,11 +37,20 @@ async def solve_problem(
 
     if not result["is_valid_math"]:
         raise HTTPException(400, "El contenido no parece ser un problema matemático válido.")
-
+    print("Resultado del Grafo:", result["final_json"])
     return result["final_json"]
+
+
+
+
+@router.post("/solve", response_model=SolucionMath)
+async def defoult_solve_problem():
+    return default
 
 @router.post("/download-pdf")
 async def download_solution(solucion_raw: str = Form(...)):
     """Genera y descarga el PDF bajo demanda basado en la solución"""
     path = generate_solution_pdf(solucion_raw)
     return FileResponse(path, filename="mi_tarea_resuelta.pdf", media_type='application/pdf')
+
+

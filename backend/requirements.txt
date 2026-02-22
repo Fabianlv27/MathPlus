@@ -8,3 +8,4 @@ langchain-groq
 pymupdf      # Para OCR
 fpdf         # Para PDF Gen
 python-dotenv
+google-genai
