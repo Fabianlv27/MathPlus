@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { InlineMath } from 'react-katex';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RefreshCw, Video, VideoOff, SkipForward, MousePointerClick, ChevronDown, ChevronUp } from 'lucide-react';
+import { Play, Pause, RefreshCw, Video, VideoOff, SkipForward, MousePointerClick, ChevronDown, ChevronUp, Maximize, Minimize } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 
 // --- 1. FUNCIÓN DE INYECCIÓN DE COLORES ---
@@ -57,14 +57,12 @@ const ElementoLatex = ({ data, state, onClick, stepIndex, isCurrentStep }) => {
             `}
             style={{ 
                 left: `${data.x}px`, 
-                // TRUCO CLAVE: Transform translate(0%, -50%) fuerza la alineación a la izquierda
-                transform: 'translate(0%, -50%)', 
-                color: isCurrentStep ? '#ffffff' : '#94a3b8', // Blanco si está activo, gris si es historial
+                transform: 'translate(0%, -50%)', // Alineación a la izquierda forzada
+                color: isCurrentStep ? '#ffffff' : '#94a3b8', 
                 minHeight: '50px'
             }}
             title={isInteractive ? `Ir al paso ${stepIndex + 1}` : ""}
         >
-            {/* CÍRCULO VERDE INDICADOR (Solo en el paso actual) */}
             {isCurrentStep && (
                 <motion.div 
                     layoutId="active-step-circle"
@@ -84,7 +82,7 @@ const ElementoLatex = ({ data, state, onClick, stepIndex, isCurrentStep }) => {
 
 // --- 3. REPRODUCTOR PRINCIPAL ---
 
-const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
+const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, onToggleFullscreen, isFullscreen }) => {
     if (!scenes || scenes.length === 0) return <div className="p-10 text-center text-slate-400">Cargando cuaderno...</div>;
 
     const [currentSceneIdx, setCurrentSceneIdx] = useState(0);
@@ -101,7 +99,6 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
 
     const scene = scenes[currentSceneIdx];
 
-    // Mapa de navegación
     const elementToStepMap = useMemo(() => {
         const map = {};
         if (!scene) return map;
@@ -116,18 +113,14 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         return map;
     }, [scene]);
 
-    // Calcular el ÚNICO elemento activo para ponerle la bolita verde
     const activeIndex = useMemo(() => {
         if (currentStepIdx < 0 || !scene.insts[currentStepIdx]) return -1;
         const tgs = scene.insts[currentStepIdx].tgs;
         if (!tgs || tgs.length === 0) return -1;
         const indices = tgs.map(tg => parseInt(tg.tg.toString().split(':')[0]));
-        return Math.max(...indices); // Siempre selecciona la ecuación más nueva
+        return Math.max(...indices); 
     }, [currentStepIdx, scene]);
 
-    // ==========================================
-    // 🧠 MOTOR DE DISEÑO (ALINEACIÓN IZQUIERDA Y CAJAS PERFECTAS)
-    // ==========================================
     const layoutData = useMemo(() => {
         if (!scene || !scene.cont) return { elements: [], boxes: [], totalHeight: 800 };
         
@@ -160,7 +153,7 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
                 const finalY = item.element.y + accumulatedYOffset;
                 finalElements[item.element.originalIdx] = { 
                     ...item.element, 
-                    x: 100, // MARGEN IZQUIERDO PRINCIPAL
+                    x: 100, 
                     shiftedY: finalY, 
                     isHiddenByBox: false 
                 };
@@ -168,7 +161,7 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
             } else {
                 const HEADER_HEIGHT = 45;
                 const PADDING_TOP = 70; 
-                const PADDING_BOTTOM = 90; // ¡Aumentado para que las fracciones no se salgan por abajo!
+                const PADDING_BOTTOM = 90; 
                 
                 if (!item.collapsed) {
                     accumulatedYOffset += PADDING_TOP;
@@ -176,7 +169,7 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
                         const finalY = el.y + accumulatedYOffset;
                         finalElements[el.originalIdx] = { 
                             ...el, 
-                            x: 140, // MARGEN IZQUIERDO DENTRO DE LA CAJA (Indentado)
+                            x: 140, 
                             shiftedY: finalY, 
                             isHiddenByBox: false, 
                             boxId: item.id 
@@ -188,8 +181,8 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
                     const boxHeight = (item.maxY - item.minY) + PADDING_TOP + PADDING_BOTTOM;
 
                     visualBoxes.push({
-                        id: item.id, y: boxTop, x: 80, // La caja empieza un poco antes que el texto
-                        width: 'calc(100% - 160px)', maxWidth: '800px', // Ancho adaptable
+                        id: item.id, y: boxTop, x: 80, 
+                        width: 'calc(100% - 160px)', maxWidth: '800px', 
                         height: boxHeight, collapsed: false, elementIndices: item.elements.map(e => e.originalIdx)
                     });
                     accumulatedYOffset += PADDING_BOTTOM;
@@ -227,7 +220,6 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         setElementStates(initialState);
     }, [currentSceneIdx, scene]);
 
-    // Audio Sequence
     useEffect(() => {
         synth.current.cancel();
         if (currentStepIdx === -1 || !isPlaying) return;
@@ -252,7 +244,6 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         return () => clearTimeout(timer);
     }, [currentStepIdx, isPlaying, scene]); 
 
-    // Visibilidad, Iluminación y Auto-Scroll
     useEffect(() => {
         if (currentStepIdx === -1) {
              const initialState = {};
@@ -301,7 +292,6 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
                 const idx = parseInt(tg.tg.toString().split(':')[0]);
                 if (newState[idx]) {
                     if (tg.ac === 'appear') newState[idx].visible = true;
-                    // Ya no ocultamos el historial, todo persiste.
                 }
             });
         }
@@ -337,14 +327,26 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-[#0a0a0a] rounded-xl overflow-hidden shadow-2xl border border-neutral-800 relative font-sans select-none">
-            {/* HEADER */}
+        <div className={`flex flex-col h-full bg-[#0a0a0a] overflow-hidden shadow-2xl relative font-sans select-none ${isFullscreen ? 'rounded-none border-0' : 'rounded-xl border border-neutral-800'}`}>
+            
+            {/* HEADER CON BOTÓN FULLSCREEN */}
             <div className="bg-[#111] border-b border-neutral-800 px-6 py-4 flex justify-between items-center z-20 shrink-0">
                 <h2 className="text-lg md:text-xl font-bold text-[#00ff66] tracking-wide">{scene.ig}</h2>
                 <div className="flex gap-2">
                      <button onClick={() => setAutoPan(!autoPan)} className={`px-3 py-1.5 rounded transition flex items-center gap-2 text-xs font-bold uppercase tracking-wide border ${autoPan ? 'text-green-400 bg-green-950/30 border-green-800/50' : 'text-neutral-500 bg-neutral-900 border-neutral-800 hover:text-neutral-300'}`}>
-                        {autoPan ? <Video size={16}/> : <VideoOff size={16}/>} {autoPan ? "Auto-Scroll" : "Manual"}
+                        {autoPan ? <Video size={16}/> : <VideoOff size={16}/>} {autoPan ? "Auto" : "Manual"}
                      </button>
+                     
+                     {/* BOTÓN FULLSCREEN */}
+                     {onToggleFullscreen && (
+                         <button 
+                             onClick={onToggleFullscreen} 
+                             className="px-3 py-1.5 rounded transition flex items-center gap-2 text-xs font-bold uppercase tracking-wide border text-neutral-500 bg-neutral-900 border-neutral-800 hover:text-[#00ff66] hover:border-green-900/50"
+                             title={isFullscreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
+                         >
+                             {isFullscreen ? <Minimize size={16}/> : <Maximize size={16}/>}
+                         </button>
+                     )}
                 </div>
             </div>
 
@@ -355,7 +357,7 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
             >
                 <div className="relative w-full" style={{ height: `${layoutData.totalHeight}px` }}>
                     
-                    {/* LÍNEAS GUÍA (CUADERNO) */}
+                    {/* LÍNEAS GUÍA */}
                     {layoutData.elements.map((el, idx) => {
                         if (!elementStates[idx]?.visible || el.isHiddenByBox) return null;
                         return (
@@ -363,7 +365,7 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
                         );
                     })}
 
-                    {/* CAJAS APART (AZUL OSCURO PUNTEADO) */}
+                    {/* CAJAS APART */}
                     {layoutData.boxes.map(box => {
                         const isVisible = box.elementIndices.some(idx => elementStates[idx]?.visible);
                         if (!isVisible) return null;
@@ -411,7 +413,7 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
                 </div>
             </div>
 
-            {/* SUBTÍTULOS CON SCROLL */}
+            {/* SUBTÍTULOS */}
             <div className="h-32 bg-[#111] border-t border-neutral-800 overflow-y-auto px-6 py-4 shrink-0 relative z-20 custom-scrollbar">
                 <AnimatePresence mode='wait'>
                     {currentStepIdx >= 0 && scene.insts[currentStepIdx] && (
