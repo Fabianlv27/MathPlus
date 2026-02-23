@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { InlineMath } from 'react-katex';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RefreshCw, LocateFixed, Video, VideoOff, SkipForward, MousePointerClick, ChevronDown, ChevronUp } from 'lucide-react';
-import { useContainerDimensions } from '../hooks/useContainerDimensions';
+import { Play, Pause, RefreshCw, Video, VideoOff, SkipForward, MousePointerClick, ChevronDown, ChevronUp } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 
 // --- 1. FUNCIÓN DE INYECCIÓN DE COLORES ---
@@ -31,23 +30,21 @@ const injectHighlights = (latex, highlights = []) => {
 
 // --- 2. COMPONENTES VISUALES ---
 
-const ElementoLatex = ({ data, state, onClick, stepIndex, currentStepIdx }) => {
+const ElementoLatex = ({ data, state, onClick, stepIndex, isCurrentStep }) => {
     const highlights = state?.highlights || [];
     const isVisible = state?.visible || false;
     const finalLatex = injectHighlights(data.cont, highlights);
     
     const isInteractive = isVisible && stepIndex !== undefined;
-    const isCurrentStep = stepIndex === currentStepIdx;
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ 
                 opacity: isVisible ? 1 : 0, 
-                scale: isVisible ? (isCurrentStep ? 1.02 : 1) : 0.8,
-                top: data.y // ¡Animación fluida en Y al colapsar cajas!
+                top: data.y 
             }}
-            transition={{ duration: 0.4, top: { type: "spring", stiffness: 60, damping: 15 } }}
+            transition={{ duration: 0.4 }}
             onClick={(e) => {
                 if (isInteractive) {
                     e.preventDefault();
@@ -55,30 +52,29 @@ const ElementoLatex = ({ data, state, onClick, stepIndex, currentStepIdx }) => {
                     onClick(stepIndex);
                 }
             }}
-            className={`absolute flex items-center justify-center rounded-xl z-50 select-none
-                ${isInteractive ? 'cursor-pointer' : 'pointer-events-none'}
-                ${isCurrentStep 
-                    ? 'bg-white shadow-md ring-1 ring-slate-200/60 z-[60]' 
-                    : 'hover:bg-indigo-50/50 hover:scale-105 transition-colors' 
-                }
+            className={`absolute flex items-center rounded-xl z-50 select-none transition-all duration-300 py-2
+                ${isInteractive ? 'cursor-pointer hover:bg-white/5' : 'pointer-events-none'}
             `}
             style={{ 
                 left: `${data.x}px`, 
-                transform: 'translate(-50%, -50%)', 
-                color: isCurrentStep ? '#0f172a' : '#475569', 
-                padding: '20px',
-                minWidth: '80px',
-                minHeight: '60px'
+                // TRUCO CLAVE: Transform translate(0%, -50%) fuerza la alineación a la izquierda
+                transform: 'translate(0%, -50%)', 
+                color: isCurrentStep ? '#ffffff' : '#94a3b8', // Blanco si está activo, gris si es historial
+                minHeight: '50px'
             }}
             title={isInteractive ? `Ir al paso ${stepIndex + 1}` : ""}
         >
+            {/* CÍRCULO VERDE INDICADOR (Solo en el paso actual) */}
             {isCurrentStep && (
                 <motion.div 
-                    layoutId="active-step-indicator"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-amber-500 rounded-r-full"
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}
+                    layoutId="active-step-circle"
+                    className="absolute -left-10 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#00ff66] rounded-full shadow-[0_0_12px_#00ff66]"
+                    initial={{ opacity: 0, scale: 0 }} 
+                    animate={{ opacity: 1, scale: 1 }} 
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 />
             )}
+            
             <span className={`whitespace-nowrap pointer-events-none transition-all duration-300 ${isCurrentStep ? 'font-medium' : 'font-normal'} text-lg md:text-2xl`}>
                 <InlineMath math={finalLatex} />
             </span>
@@ -87,47 +83,23 @@ const ElementoLatex = ({ data, state, onClick, stepIndex, currentStepIdx }) => {
 };
 
 // --- 3. REPRODUCTOR PRINCIPAL ---
-// --- CALCULADORA DE ANCHOS DINÁMICOS ---
-const estimateBoxWidth = (elements) => {
-    let maxWidth = 300; // Ancho mínimo de la caja por estética (el tamaño del encabezado)
-    
-    elements.forEach(el => {
-        if (!el.cont) return;
-        // 1. Limpiamos comandos que no ocupan ancho real horizontalmente
-        const cleanStr = el.cont.replace(/\\[a-zA-Z]+/g, 'X');
-        
-        // 2. Asignamos ~16px por carácter (para texto text-lg/2xl) + 120px de padding (60px a cada lado)
-        const estimatedWidth = (cleanStr.length * 16) + 120;
-        
-        if (estimatedWidth > maxWidth) maxWidth = estimatedWidth;
-    });
-    
-    // Limitamos el ancho máximo a 900px para que no se salga de pantallas normales
-    return Math.min(maxWidth, 900); 
-};
+
 const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
-    if (!scenes || scenes.length === 0) return <div className="p-10 text-center text-slate-400">Cargando pizarra...</div>;
+    if (!scenes || scenes.length === 0) return <div className="p-10 text-center text-slate-400">Cargando cuaderno...</div>;
 
     const [currentSceneIdx, setCurrentSceneIdx] = useState(0);
     const [currentStepIdx, setCurrentStepIdx] = useState(-1);
     const [maxStepReached, setMaxStepReached] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
     const [elementStates, setElementStates] = useState({});
-    
-    // NUEVO: Estado de las cajas colapsables
     const [collapsedBoxes, setCollapsedBoxes] = useState({});
     
-    const [pan, setPan] = useState({ x: 0, y: 0 });
     const [autoPan, setAutoPan] = useState(true);
-    const [isDragging, setIsDragging] = useState(false);
-    const dragStartRef = useRef({ x: 0, y: 0 });
-    const containerRef = useRef(null);
-    
+    const scrollContainerRef = useRef(null);
     const synth = useRef(window.speechSynthesis);
     const isManualJump = useRef(false);
 
     const scene = scenes[currentSceneIdx];
-    const { width, height, isMobile } = useContainerDimensions(containerRef);
 
     // Mapa de navegación
     const elementToStepMap = useMemo(() => {
@@ -137,34 +109,37 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
             if (inst.tgs) {
                 inst.tgs.forEach(tg => {
                     const idStr = tg.tg.toString().split(':')[0];
-                    map[parseInt(idStr)] = stepIndex;
+                    if (map[parseInt(idStr)] === undefined) map[parseInt(idStr)] = stepIndex;
                 });
             }
         });
         return map;
     }, [scene]);
 
-// ==========================================
-    // 🧠 MOTOR DE DISEÑO: CAJAS Y COORDENADAS DINÁMICAS
+    // Calcular el ÚNICO elemento activo para ponerle la bolita verde
+    const activeIndex = useMemo(() => {
+        if (currentStepIdx < 0 || !scene.insts[currentStepIdx]) return -1;
+        const tgs = scene.insts[currentStepIdx].tgs;
+        if (!tgs || tgs.length === 0) return -1;
+        const indices = tgs.map(tg => parseInt(tg.tg.toString().split(':')[0]));
+        return Math.max(...indices); // Siempre selecciona la ecuación más nueva
+    }, [currentStepIdx, scene]);
+
     // ==========================================
-  // ==========================================
-    // 🧠 MOTOR DE DISEÑO: CAJAS Y COORDENADAS DINÁMICAS
+    // 🧠 MOTOR DE DISEÑO (ALINEACIÓN IZQUIERDA Y CAJAS PERFECTAS)
     // ==========================================
     const layoutData = useMemo(() => {
-        if (!scene || !scene.cont) return { elements: [], boxes: [] };
+        if (!scene || !scene.cont) return { elements: [], boxes: [], totalHeight: 800 };
         
         const items = [];
         let currentBox = null;
         
-        // 1. Agrupar elementos según el atributo "apart"
         scene.cont.forEach((el, idx) => {
             const elData = { ...el, originalIdx: idx };
-            
             if (el.apart === 'start' || el.apart === 'start-end') {
                 currentBox = { id: `box-${idx}`, elements: [], minY: el.y, maxY: el.y, collapsed: !!collapsedBoxes[`box-${idx}`] };
                 items.push(currentBox);
             }
-            
             if (currentBox) {
                 currentBox.elements.push(elData);
                 currentBox.minY = Math.min(currentBox.minY, el.y);
@@ -172,97 +147,71 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
             } else {
                 items.push({ type: 'single', element: elData });
             }
-            
             if (el.apart === 'end' || el.apart === 'start-end') currentBox = null;
         });
         
-        // 2. Calcular desplazamientos y Geometría Dinámica
-        let accumulatedYOffset = 0; // Positivo = empujar ABAJO, Negativo = tirar ARRIBA
+        let accumulatedYOffset = 0; 
         const finalElements = [];
         const visualBoxes = [];
+        let maxGlobalY = 0; 
         
         items.forEach(item => {
             if (item.type === 'single') {
+                const finalY = item.element.y + accumulatedYOffset;
                 finalElements[item.element.originalIdx] = { 
                     ...item.element, 
-                    shiftedY: item.element.y + accumulatedYOffset, 
+                    x: 100, // MARGEN IZQUIERDO PRINCIPAL
+                    shiftedY: finalY, 
                     isHiddenByBox: false 
                 };
+                if (finalY > maxGlobalY) maxGlobalY = finalY;
             } else {
-                // Constantes de diseño de la caja
                 const HEADER_HEIGHT = 45;
-                const PADDING_TOP = 60; // Hueco interior superior (debajo del header)
-                const PADDING_BOTTOM = 40; // Hueco interior inferior
+                const PADDING_TOP = 70; 
+                const PADDING_BOTTOM = 90; // ¡Aumentado para que las fracciones no se salgan por abajo!
                 
-                // Cálculo dinámico de ancho y centro
-                const dynamicWidth = Math.max(estimateBoxWidth(item.elements), 450);
-                let sumX = 0;
-                item.elements.forEach(el => sumX += el.x);
-                const boxCenterX = sumX / item.elements.length ; // Centro exacto sin +120
-
                 if (!item.collapsed) {
-                    // --- CAJA ABIERTA ---
-                    // 1. Empujamos el interior hacia abajo para no pisar el Header
                     accumulatedYOffset += PADDING_TOP;
-
                     item.elements.forEach(el => {
+                        const finalY = el.y + accumulatedYOffset;
                         finalElements[el.originalIdx] = { 
                             ...el, 
-                            shiftedY: el.y + accumulatedYOffset, 
+                            x: 140, // MARGEN IZQUIERDO DENTRO DE LA CAJA (Indentado)
+                            shiftedY: finalY, 
                             isHiddenByBox: false, 
                             boxId: item.id 
                         };
+                        if (finalY > maxGlobalY) maxGlobalY = finalY;
                     });
                     
-                    // 2. Dibujamos la caja rodeando los elementos
                     const boxTop = (item.minY + accumulatedYOffset) - PADDING_TOP;
                     const boxHeight = (item.maxY - item.minY) + PADDING_TOP + PADDING_BOTTOM;
 
                     visualBoxes.push({
-                        id: item.id,
-                        y: boxTop,
-                        x: boxCenterX+120,
-                        width: dynamicWidth,
-                        height: boxHeight+50,
-                        collapsed: false,
-                        elementIndices: item.elements.map(e => e.originalIdx)
+                        id: item.id, y: boxTop, x: 80, // La caja empieza un poco antes que el texto
+                        width: 'calc(100% - 160px)', maxWidth: '800px', // Ancho adaptable
+                        height: boxHeight, collapsed: false, elementIndices: item.elements.map(e => e.originalIdx)
                     });
-                    
-                    // 3. Empujamos todo lo que viene DESPUÉS de la caja hacia abajo
                     accumulatedYOffset += PADDING_BOTTOM;
-
                 } else {
-                    // --- CAJA COLAPSADA ---
                     const boxTop = item.minY + accumulatedYOffset - 20;
-
                     visualBoxes.push({
-                        id: item.id,
-                        y: boxTop,
-                        x: boxCenterX,
-                        width: dynamicWidth,
-                        height: HEADER_HEIGHT,
-                        collapsed: true,
-                        elementIndices: item.elements.map(e => e.originalIdx)
+                        id: item.id, y: boxTop, x: 80, width: 'calc(100% - 160px)', maxWidth: '800px', height: HEADER_HEIGHT,
+                        collapsed: true, elementIndices: item.elements.map(e => e.originalIdx)
                     });
                     
                     item.elements.forEach(el => {
-                        finalElements[el.originalIdx] = { 
-                            ...el, 
-                            shiftedY: boxTop, // Lo escondemos arriba
-                            isHiddenByBox: true, 
-                            boxId: item.id 
-                        };
+                        finalElements[el.originalIdx] = { ...el, x: 140, shiftedY: boxTop, isHiddenByBox: true, boxId: item.id };
                     });
                     
-                    // Si está colapsada, recuperamos el espacio que la IA había gastado
                     const aiAllocatedSpace = item.maxY - item.minY;
                     accumulatedYOffset -= aiAllocatedSpace;
-                    accumulatedYOffset += HEADER_HEIGHT; // Y le sumamos lo que mide el header
+                    accumulatedYOffset += HEADER_HEIGHT; 
                 }
             }
         });
         
-        return { elements: finalElements, boxes: visualBoxes };
+        return { elements: finalElements, boxes: visualBoxes, totalHeight: maxGlobalY + 300 };
     }, [scene, collapsedBoxes]);
 
     useEffect(() => { if (currentStepIdx > maxStepReached) setMaxStepReached(currentStepIdx); }, [currentStepIdx]); 
@@ -271,7 +220,8 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
 
     useEffect(() => {
         setCurrentStepIdx(-1); setMaxStepReached(-1); setIsPlaying(false); setCollapsedBoxes({});
-        synth.current.cancel(); setPan({ x: 0, y: 0 });
+        synth.current.cancel(); 
+        if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
         const initialState = {};
         scene.cont.forEach((el, idx) => initialState[idx] = { visible: el.status === 'show', highlights: [] });
         setElementStates(initialState);
@@ -284,7 +234,12 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         const currentInst = scene.insts[currentStepIdx];
         if (!currentInst) return;
 
-        const utterance = new SpeechSynthesisUtterance(currentInst.msg);
+        const textoLimpioParaVoz = currentInst.msg
+            .replace(/\\frac/g, " fracción ")
+            .replace(/\\log/g, " logaritmo ")
+            .replace(/[\_\^\\\{\}\$]/g, " ");
+
+        const utterance = new SpeechSynthesisUtterance(textoLimpioParaVoz);
         utterance.lang = 'es-ES'; utterance.rate = 1.1;
         utterance.onend = () => {
             if (isManualJump.current) { isManualJump.current = false; return; }
@@ -297,7 +252,7 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         return () => clearTimeout(timer);
     }, [currentStepIdx, isPlaying, scene]); 
 
-    // Cámara y Estados Visuales
+    // Visibilidad, Iluminación y Auto-Scroll
     useEffect(() => {
         if (currentStepIdx === -1) {
              const initialState = {};
@@ -309,7 +264,6 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         const currentInst = scene.insts[currentStepIdx];
         if (!currentInst) return;
 
-        // AUTO-ABRIR CAJAS COLAPSADAS SI EL PASO ESTÁ DENTRO DE ELLAS
         let boxesChanged = false;
         let newCollapsedState = { ...collapsedBoxes };
         if (currentInst.tgs) {
@@ -324,43 +278,32 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         }
         if (boxesChanged) {
             setCollapsedBoxes(newCollapsedState);
-            return; // Pausamos este render; el cambio de estado volverá a lanzar el useEffect con la caja abierta
+            return; 
         }
 
-        // CÁMARA CENTROIDE USANDO COORDENADAS DINÁMICAS (shiftedY)
-        if (autoPan && currentInst.tgs && currentInst.tgs.length > 0 && containerRef.current) {
-            let sumX = 0, sumY = 0, count = 0;
-            currentInst.tgs.forEach(tgObj => {
-                const idx = parseInt(tgObj.tg.toString().split(':')[0]);
-                const element = layoutData.elements[idx]; // Usamos la posición corregida por el acordeón
-                if (element && element.x !== undefined && element.shiftedY !== undefined) {
-                    sumX += element.x; sumY += element.shiftedY; count++;
-                }
-            });
-            if (count > 0) {
-                const targetX = sumX / count;
-                const targetY = sumY / count;
-                const newPanX = (containerRef.current.clientWidth / 2) - targetX - 150;
-                const newPanY = (containerRef.current.clientHeight / 2) - targetY - 50;
-                setPan({ x: newPanX, y: newPanY });
+        if (autoPan && activeIndex !== -1 && scrollContainerRef.current) {
+            const element = layoutData.elements[activeIndex];
+            if (element && element.shiftedY !== undefined) {
+                scrollContainerRef.current.scrollTo({
+                    top: element.shiftedY - (scrollContainerRef.current.clientHeight / 2) + 100,
+                    behavior: 'smooth'
+                });
             }
         }
 
-        // VISIBILIDAD E ILUMINACIÓN
         const newState = {};
         scene.cont.forEach((el, idx) => newState[idx] = { visible: el.status === 'show', highlights: [] });
         const visibilityLimit = Math.max(currentStepIdx, maxStepReached);
 
         for (let i = 0; i <= visibilityLimit; i++) {
             const step = scene.insts[i];
-            if (step.tgs) step.tgs.forEach(tg => {
+            if (step && step.tgs) step.tgs.forEach(tg => {
                 const idx = parseInt(tg.tg.toString().split(':')[0]);
                 if (newState[idx]) {
                     if (tg.ac === 'appear') newState[idx].visible = true;
-                    if (tg.ac === 'hide') newState[idx].visible = false;
+                    // Ya no ocultamos el historial, todo persiste.
                 }
             });
-            if (step.fin) step.fin.forEach(idx => { if (newState[idx]) newState[idx].visible = false; });
         }
 
         if (currentInst.tgs) {
@@ -375,14 +318,13 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
                         start = parseInt(rangeStr.split('-')[0]);
                         end = rangeStr.split('-')[1] === 'f' ? 'f' : parseInt(rangeStr.split('-')[1]);
                     }
-                    if (newState[parseInt(idStr)]) newState[parseInt(idStr)].highlights.push({ start, end, color: tgObj.color || '#F59E0B' });
+                    if (newState[parseInt(idStr)]) newState[parseInt(idStr)].highlights.push({ start, end, color: tgObj.color || '#00ff66' });
                 }
             });
         }
         setElementStates(newState);
-    }, [currentStepIdx, maxStepReached, autoPan, scene, layoutData, collapsedBoxes]); 
+    }, [currentStepIdx, maxStepReached, autoPan, scene, layoutData, collapsedBoxes, activeIndex]); 
 
-    // Manejadores de Controles
     const handleJumpToStep = (step) => { isManualJump.current = true; synth.current.cancel(); setCurrentStepIdx(step); setIsPlaying(false); };
     const handleSkip = () => { if (currentStepIdx < scene.insts.length - 1) { isManualJump.current = true; synth.current.cancel(); setCurrentStepIdx(prev => prev + 1); setIsPlaying(true); } };
     const togglePlay = () => {
@@ -394,106 +336,101 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep }) => {
         }
     };
 
-    const handleMouseUp = () => setIsDragging(false);
-
     return (
-        <div className="flex flex-col h-full bg-slate-50 rounded-xl overflow-hidden shadow-xl border border-slate-200 relative font-sans select-none">
+        <div className="flex flex-col h-full bg-[#0a0a0a] rounded-xl overflow-hidden shadow-2xl border border-neutral-800 relative font-sans select-none">
             {/* HEADER */}
-            <div className="bg-white border-b px-6 py-4 flex justify-between items-center z-20 shadow-sm shrink-0">
-                <h2 className="text-xl font-bold text-slate-800">{scene.ig}</h2>
+            <div className="bg-[#111] border-b border-neutral-800 px-6 py-4 flex justify-between items-center z-20 shrink-0">
+                <h2 className="text-lg md:text-xl font-bold text-[#00ff66] tracking-wide">{scene.ig}</h2>
                 <div className="flex gap-2">
-                     <button onClick={() => setAutoPan(!autoPan)} className={`p-2 rounded transition flex items-center gap-2 text-xs font-bold uppercase tracking-wide ${autoPan ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 bg-slate-100'}`}>
-                        {autoPan ? <Video size={18}/> : <VideoOff size={18}/>} {autoPan ? "Auto" : "Manual"}
+                     <button onClick={() => setAutoPan(!autoPan)} className={`px-3 py-1.5 rounded transition flex items-center gap-2 text-xs font-bold uppercase tracking-wide border ${autoPan ? 'text-green-400 bg-green-950/30 border-green-800/50' : 'text-neutral-500 bg-neutral-900 border-neutral-800 hover:text-neutral-300'}`}>
+                        {autoPan ? <Video size={16}/> : <VideoOff size={16}/>} {autoPan ? "Auto-Scroll" : "Manual"}
                      </button>
-                     <button onClick={() => setPan({x:0, y:0})} className="p-2 text-slate-500 hover:bg-slate-100 rounded"><LocateFixed size={18}/></button>
                 </div>
             </div>
 
-            {/* CANVAS */}
+            {/* CANVAS CUADERNO */}
             <div 
-                ref={containerRef}
-                className={`relative flex-grow bg-white overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-                onMouseDown={(e) => { setIsDragging(true); dragStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y }; }} 
-                onMouseMove={(e) => { if (!isDragging) return; setPan({ x: e.clientX - dragStartRef.current.x, y: e.clientY - dragStartRef.current.y }); }} 
-                onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
+                ref={scrollContainerRef}
+                className="relative flex-grow bg-[#0f1115] overflow-y-auto overflow-x-hidden custom-scrollbar"
             >
-                <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/graphy.png")', backgroundPosition: `${pan.x}px ${pan.y}px` }}></div>
-                
-                <motion.div className="absolute top-0 left-0 w-full h-full" animate={{ x: pan.x, y: pan.y }} transition={{ type: "spring", stiffness: 50, damping: 20 }}>
+                <div className="relative w-full" style={{ height: `${layoutData.totalHeight}px` }}>
                     
-                    {/* FONDOS DE CAJA (Acordeón) */}
+                    {/* LÍNEAS GUÍA (CUADERNO) */}
+                    {layoutData.elements.map((el, idx) => {
+                        if (!elementStates[idx]?.visible || el.isHiddenByBox) return null;
+                        return (
+                            <div key={`line-${idx}`} className="absolute w-full border-b border-dashed border-green-900/30" style={{ top: el.shiftedY + 40 }} />
+                        );
+                    })}
+
+                    {/* CAJAS APART (AZUL OSCURO PUNTEADO) */}
                     {layoutData.boxes.map(box => {
                         const isVisible = box.elementIndices.some(idx => elementStates[idx]?.visible);
                         if (!isVisible) return null;
 
                         return (
                             <motion.div
-                                key={box.id}
-                                layout
-                                initial={{ opacity: 0 }}
+                                key={box.id} initial={{ opacity: 0 }}
                                 animate={{ top: box.y, opacity: 1, height: box.height }}
-                                transition={{ duration: 0.4, type: "spring", stiffness: 60, damping: 15 }}
-                                className="absolute border border-indigo-200 bg-indigo-50/50 rounded-xl overflow-hidden shadow-sm z-0 flex flex-col"
-                                style={{ left: box.x - box.width/2, width: box.width }}
+                                transition={{ duration: 0.3 }}
+                                className="absolute border border-dashed border-[#3b82f6]/70 bg-[#0c1a2e]/90 rounded-xl overflow-hidden shadow-xl z-0 flex flex-col"
+                                style={{ left: box.x, width: box.width, maxWidth: box.maxWidth }}
                             >
                                 <div 
                                     onClick={() => setCollapsedBoxes(p => ({ ...p, [box.id]: !p[box.id] }))}
-                                    className="h-[45px] bg-indigo-100/70 cursor-pointer flex items-center justify-between px-4 hover:bg-indigo-200 transition-colors border-b border-indigo-200/50 shrink-0"
+                                    className="h-[45px] bg-[#11243d] cursor-pointer flex items-center justify-between px-4 hover:bg-[#183152] transition-colors border-b border-[#3b82f6]/50 shrink-0"
                                 >
-                                    <span className="text-sm font-bold text-indigo-700 tracking-wider">Desglose Auxiliar</span>
-                                    <span className="text-xs text-indigo-600 font-bold flex items-center gap-1 bg-white/50 px-2 py-1 rounded">
-                                        {box.collapsed ? <><ChevronDown size={14}/> Mostrar</> : <><ChevronUp size={14}/> Ocultar</>}
+                                    <span className="text-sm font-bold text-[#60a5fa] tracking-wider font-mono">apart</span>
+                                    <span className="text-xs text-[#93c5fd] font-bold flex items-center gap-1 bg-blue-950/50 px-2 py-1 rounded">
+                                        {box.collapsed ? <><ChevronDown size={14}/> Expandir</> : <><ChevronUp size={14}/> Ocultar</>}
                                     </span>
                                 </div>
                             </motion.div>
                         );
                     })}
 
-                    {/* ELEMENTOS MATEMÁTICOS */}
+                    {/* FÓRMULAS MATEMÁTICAS */}
                     {scene.cont.map((el, idx) => {
                         const state = elementStates[idx];
                         const processedEl = layoutData.elements[idx];
                         if (!state || !processedEl) return null;
                         
                         const stepIndex = elementToStepMap[idx] || 0;
-                        const renderData = { ...el, y: processedEl.shiftedY };
-                        // Si la caja está colapsada, se ocultan los elementos internos
+                        const renderData = { ...el, x: processedEl.x, y: processedEl.shiftedY };
                         const renderState = { ...state, visible: state.visible && !processedEl.isHiddenByBox };
+                        
+                        const isCurrentStep = (idx === activeIndex);
 
                         if (el.type === 'Latex') return (
                             <ElementoLatex 
-                                key={idx} data={renderData} state={renderState} stepIndex={stepIndex} currentStepIdx={currentStepIdx} onClick={handleJumpToStep} 
+                                key={idx} data={renderData} state={renderState} stepIndex={stepIndex} isCurrentStep={isCurrentStep} onClick={handleJumpToStep} 
                             />
                         );
                         return null;
                     })}
-                </motion.div>
-                
-                {!isPlaying && currentStepIdx > 0 && (
-                    <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1 rounded-full text-xs text-slate-500 shadow-sm border flex items-center gap-2 pointer-events-none">
-                        <MousePointerClick size={14}/> Haz clic en una fórmula para volver a su explicación
-                    </div>
-                )}
+                </div>
             </div>
 
-            {/* SUBTÍTULOS */}
-            <div className="h-24 bg-slate-50 border-t border-slate-200 flex items-center justify-center px-4 shrink-0 relative z-20">
+            {/* SUBTÍTULOS CON SCROLL */}
+            <div className="h-32 bg-[#111] border-t border-neutral-800 overflow-y-auto px-6 py-4 shrink-0 relative z-20 custom-scrollbar">
                 <AnimatePresence mode='wait'>
                     {currentStepIdx >= 0 && scene.insts[currentStepIdx] && (
-                        <motion.div key={currentStepIdx} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -10, opacity: 0 }} className="text-center max-w-3xl">
-                            <p className="text-slate-700 text-lg font-medium leading-relaxed">{scene.insts[currentStepIdx].msg}</p>
+                        <motion.div key={currentStepIdx} initial={{ y: 5, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} className="max-w-4xl mx-auto">
+                            <p className="text-neutral-300 text-base md:text-lg font-medium leading-relaxed">
+                                {scene.insts[currentStepIdx].msg}
+                            </p>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
 
             {/* CONTROLES */}
-            <div className="bg-white p-4 border-t flex items-center justify-center gap-4 z-20 shrink-0">
-                <button onClick={() => { setIsPlaying(false); setCurrentStepIdx(-1); setMaxStepReached(-1); setPan({x:0, y:0}); setCollapsedBoxes({}); }} className="p-3 text-slate-400 hover:text-indigo-600 rounded-full hover:bg-slate-50 transition" title="Reiniciar"><RefreshCw size={20}/></button>
-                <button onClick={togglePlay} className={`flex items-center gap-3 px-8 py-3 rounded-full font-bold text-white shadow-lg transition-all hover:scale-105 active:scale-95 ${isPlaying ? 'bg-amber-500' : 'bg-indigo-600'}`}>
-                    {isPlaying ? <><Pause fill="white" size={20}/> Pausar</> : <><Play fill="white" size={20}/> {currentStepIdx === -1 ? 'Comenzar' : 'Continuar'}</>}
+            <div className="bg-[#0a0a0a] p-4 border-t border-neutral-800 flex items-center justify-center gap-6 z-20 shrink-0">
+                <button onClick={() => { setIsPlaying(false); setCurrentStepIdx(-1); setMaxStepReached(-1); setCollapsedBoxes({}); if(scrollContainerRef.current) scrollContainerRef.current.scrollTop=0; }} className="p-3 text-neutral-500 hover:text-[#00ff66] rounded-full hover:bg-neutral-900 transition" title="Reiniciar"><RefreshCw size={20}/></button>
+                <button onClick={togglePlay} className={`flex items-center gap-3 px-8 py-3 rounded-full font-bold text-black shadow-[0_0_15px_rgba(0,255,102,0.3)] transition-all hover:scale-105 active:scale-95 ${isPlaying ? 'bg-amber-500 shadow-amber-500/30' : 'bg-[#00ff66]'}`}>
+                    {isPlaying ? <><Pause fill="black" size={20}/> Pausar</> : <><Play fill="black" size={20}/> {currentStepIdx === -1 ? 'Comenzar' : 'Continuar'}</>}
                 </button>
-                <button onClick={handleSkip} disabled={currentStepIdx >= scene.insts.length - 1} className="p-3 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition disabled:opacity-30 disabled:hover:bg-transparent" title="Siguiente Paso">
+                <button onClick={handleSkip} disabled={currentStepIdx >= scene.insts.length - 1} className="p-3 text-neutral-500 hover:text-[#00ff66] hover:bg-neutral-900 rounded-full transition disabled:opacity-30 disabled:hover:bg-transparent" title="Siguiente Paso">
                     <SkipForward size={24}/>
                 </button>
             </div>

@@ -4,16 +4,11 @@ from app.models.schemas import SolucionMath
 from app.agents.graph import app_graph
 from app.services.ocr import extract_text_from_pdf
 from app.services.pdf_gen import generate_solution_pdf
-from app.data.default import default
+from app.data.default import default,default4
 
 router = APIRouter()
 
 
-
-async def defoult_solve_problem():
-    return default
-
-@router.post("/solve", response_model=SolucionMath)
 async def solve_problem(
     query: str = Form(None), 
     file: UploadFile = File(None)
@@ -46,6 +41,11 @@ async def solve_problem(
     print("Resultado del Grafo:", result["final_json"])
     return result["final_json"]
 
+
+
+@router.post("/solve", response_model=SolucionMath)
+async def defoult_solve_problem():
+    return default4
 
 @router.post("/download-pdf")
 async def download_solution(solucion_raw: str = Form(...)):
