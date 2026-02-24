@@ -118,14 +118,24 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
   // ==========================================
   // 3. MANEJADORES DE RECURSOS (resources)
   // ==========================================
-  const handleResourceChange = (index, field, value) => {
+ const handleResourceChange = (index, field, value) => {
     const newRes = [...(draft.resources || [])];
-    newRes[index][field] = field === 'step' ? parseInt(value) || 0 : value;
+    
+    if (field === 'step') {
+      // Parseamos el string "1, 2, 4" a un array [1, 2, 4]
+      const arraySteps = value.split(',')
+                              .map(s => parseInt(s.trim()))
+                              .filter(n => !isNaN(n));
+      newRes[index][field] = arraySteps.length > 0 ? arraySteps : [0];
+    } else {
+      newRes[index][field] = value;
+    }
+    
     setDraft({ ...draft, resources: newRes });
   };
 
-  const addResource = () => {
-    const newRes = [...(draft.resources || []), { step: previewStep, title: 'Nuevo Recurso', tex: 'a^2 + b^2 = c^2' }];
+ const addResource = () => {
+    const newRes = [...(draft.resources || []), { step: [previewStep], title: 'Nuevo Recurso', tex: 'a^2 + b^2 = c^2' }];
     setDraft({ ...draft, resources: newRes });
   };
 
@@ -302,7 +312,7 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
                     </div>
                 )}
 
-                {/* ---------------------------------
+            {/* ---------------------------------
                     PESTAÑA 3: RECURSOS (resources)
                     --------------------------------- */}
                 {activeTab === 'resources' && (
@@ -311,11 +321,20 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
                             <div key={i} className="bg-[#111] border border-neutral-800 p-4 rounded-xl relative group">
                                 <button onClick={() => removeResource(i)} className="absolute top-4 right-4 text-red-500/50 hover:text-red-500 transition opacity-0 group-hover:opacity-100"><Trash2 size={18}/></button>
                                 <div className="grid grid-cols-12 gap-4 mt-2 pr-6">
-                                    <div className="col-span-12 md:col-span-3">
-                                        <label className="text-[10px] text-amber-400 uppercase font-bold mb-1 block">¿En qué paso aparece?</label>
-                                        <input type="number" min="0" value={res.step} onChange={(e) => handleResourceChange(i, 'step', e.target.value)} className="w-full bg-[#050505] border border-neutral-800 rounded p-2 text-white focus:border-amber-400 focus:outline-none font-mono text-sm" />
+                                    <div className="col-span-12 md:col-span-4">
+                                        <label className="text-[10px] text-amber-400 uppercase font-bold mb-1 block">¿En qué pasos aparece?</label>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Ej: 1, 3, 5"
+                                            // Usamos key para forzar la actualización y defaultValue para no perder comas al tipear
+                                            key={Array.isArray(res.step) ? res.step.join(',') : res.step}
+                                            defaultValue={Array.isArray(res.step) ? res.step.join(', ') : res.step} 
+                                            onBlur={(e) => handleResourceChange(i, 'step', e.target.value)} 
+                                            className="w-full bg-[#050505] border border-neutral-800 rounded p-2 text-white focus:border-amber-400 focus:outline-none font-mono text-sm" 
+                                        />
+                                        <p className="text-[9px] text-neutral-500 mt-1">Separa con comas (Ej: 1, 4)</p>
                                     </div>
-                                    <div className="col-span-12 md:col-span-9">
+                                    <div className="col-span-12 md:col-span-8">
                                         <label className="text-[10px] text-blue-400 uppercase font-bold mb-1 block">Título del Teorema / Regla</label>
                                         <input type="text" value={res.title} onChange={(e) => handleResourceChange(i, 'title', e.target.value)} className="w-full bg-[#050505] border border-neutral-800 rounded p-2 text-white focus:border-blue-400 focus:outline-none text-sm font-bold" />
                                     </div>
@@ -329,7 +348,6 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
                         <button onClick={addResource} className="w-full py-4 border-2 border-dashed border-neutral-800 text-neutral-500 rounded-xl hover:border-amber-400 hover:text-amber-400 transition flex justify-center items-center gap-2 font-bold"><Plus size={18}/> Añadir Nuevo Recurso</button>
                     </div>
                 )}
-
             </div>
         </div>
 
@@ -343,7 +361,7 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
                 <WhiteboardPlayer 
                     scenes={[draft]} 
                     requestedStep={previewStep} 
-                    onStepChange={(s) => {}} 
+                    onStepChange={() => {}} 
                 />
             </div>
         </div>

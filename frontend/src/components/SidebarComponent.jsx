@@ -6,11 +6,6 @@ import { BookOpen, Lightbulb, MousePointerClick } from 'lucide-react';
 const SidebarRecursos = ({ resources, currentStepIdx, onResourceClick }) => {
   if (!resources || resources.length === 0) return null;
 
-  let activeResourceIndex = -1;
-  resources.forEach((res, index) => {
-    if (res.step <= currentStepIdx) activeResourceIndex = index;
-  });
-
   return (
     <div className="bg-[#111] p-5 rounded-xl border border-neutral-800 transition-all duration-300">
       
@@ -23,12 +18,15 @@ const SidebarRecursos = ({ resources, currentStepIdx, onResourceClick }) => {
 
       <div className="space-y-4 max-h-[500px] md:max-h-[calc(100vh-150px)] overflow-y-auto pr-2 custom-scrollbar">
         {resources.map((res, idx) => {
-          const isActive = idx === activeResourceIndex;
+          // AHORA COMPROBAMOS SI EL PASO ACTUAL EXISTE EN EL ARREGLO
+          const stepArray = Array.isArray(res.step) ? res.step : [res.step];
+          const isActive = stepArray.includes(currentStepIdx);
           
           return (
             <div 
               key={idx} 
-              onClick={() => onResourceClick(res.step)}
+              // Hacemos que navegue al primer paso donde este recurso es usado
+              onClick={() => onResourceClick(stepArray[0])}
               className={`
                 relative p-4 rounded-lg border-l-4 transition-all duration-300 ease-in-out cursor-pointer group
                 ${isActive 
@@ -37,14 +35,12 @@ const SidebarRecursos = ({ resources, currentStepIdx, onResourceClick }) => {
                 }
               `}
             >
-              {/* Icono indicador activo */}
               {isActive && (
                 <div className="absolute top-2 right-2 text-[#00ff66] animate-pulse">
                   <Lightbulb size={16} />
                 </div>
               )}
               
-              {/* Icono hint al hacer hover en inactivos */}
               {!isActive && (
                 <div className="absolute top-2 right-2 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity">
                   <MousePointerClick size={16} />
@@ -58,7 +54,6 @@ const SidebarRecursos = ({ resources, currentStepIdx, onResourceClick }) => {
                 {res.title}
               </h4>
 
-              {/* Contenedor de la fórmula */}
               <div className={`
                 font-serif text-center py-3 px-3 rounded-md border
                 ${isActive 
@@ -75,7 +70,7 @@ const SidebarRecursos = ({ resources, currentStepIdx, onResourceClick }) => {
           );
         })}
       </div>
-      <p className="text-center text-xs text-neutral-600 mt-5 font-medium">Haz clic en una tarjeta para ir a ese paso.</p>
+      <p className="text-center text-xs text-neutral-600 mt-5 font-medium">Haz clic en una tarjeta para ir a su explicación.</p>
     </div>
   );
 };
