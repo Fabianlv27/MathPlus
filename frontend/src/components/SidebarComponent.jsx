@@ -16,7 +16,7 @@ const SidebarRecursos = ({ resources, currentStepIdx, onResourceClick }) => {
         <h3 className="text-lg font-bold text-neutral-200 tracking-wide">Recursos Teóricos</h3>
       </div>
 
-      <div className="space-y-4 max-h-[500px] md:max-h-[calc(100vh-150px)] overflow-y-auto pr-2 custom-scrollbar">
+      <div className="space-y-5 max-h-[500px] md:max-h-[calc(100vh-150px)] overflow-y-auto pr-2 pt-2 custom-scrollbar">
         {resources.map((res, idx) => {
           // AHORA COMPROBAMOS SI EL PASO ACTUAL EXISTE EN EL ARREGLO
           const stepArray = Array.isArray(res.step) ? res.step : [res.step];
@@ -28,37 +28,39 @@ const SidebarRecursos = ({ resources, currentStepIdx, onResourceClick }) => {
               // Hacemos que navegue al primer paso donde este recurso es usado
               onClick={() => onResourceClick(stepArray[0])}
               className={`
-                relative p-4 rounded-lg border-l-4 transition-all duration-300 ease-in-out cursor-pointer group
+                relative p-4 rounded-xl transition-all duration-300 ease-out cursor-pointer group
                 ${isActive 
-                  ? 'bg-green-950/20 border-[#00ff66] shadow-[0_0_15px_rgba(0,255,102,0.1)] translate-x-1' 
-                  : 'bg-[#0a0a0a] border-neutral-800 hover:border-green-900/50 hover:bg-[#151515]'
+                  ? 'bg-gradient-to-b from-[#0f1f14] to-[#0a140d] border border-[#00ff66]/80 border-b-[4px] border-b-[#00aa44] shadow-[0_10px_25px_rgba(0,255,102,0.25),inset_0_2px_4px_rgba(0,255,102,0.15)] -translate-y-1 scale-[1.02] z-10' 
+                  : 'bg-[#0a0a0a] border border-neutral-800 border-b-[4px] border-b-neutral-900 shadow-md hover:bg-[#111] hover:border-neutral-700 hover:-translate-y-0.5 hover:shadow-lg'
                 }
               `}
             >
+              {/* Icono indicador activo */}
               {isActive && (
-                <div className="absolute top-2 right-2 text-[#00ff66] animate-pulse">
-                  <Lightbulb size={16} />
+                <div className="absolute top-3 right-3 text-[#00ff66] animate-pulse drop-shadow-[0_0_8px_rgba(0,255,102,0.8)]">
+                  <Lightbulb size={18} />
                 </div>
               )}
               
+              {/* Icono hint al hacer hover en inactivos */}
               {!isActive && (
-                <div className="absolute top-2 right-2 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-3 right-3 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity">
                   <MousePointerClick size={16} />
                 </div>
               )}
 
               <h4 className={`
-                text-xs font-bold uppercase tracking-wider mb-2
-                ${isActive ? 'text-[#00ff66]' : 'text-neutral-500 group-hover:text-green-400'}
+                text-xs font-extrabold uppercase tracking-wider mb-3
+                ${isActive ? 'text-[#00ff66] drop-shadow-[0_0_5px_rgba(0,255,102,0.3)]' : 'text-neutral-500 group-hover:text-neutral-300'}
               `}>
                 {res.title}
               </h4>
 
               <div className={`
-                font-serif text-center py-3 px-3 rounded-md border
+                font-serif text-center py-3 px-3 rounded-lg border
                 ${isActive 
-                    ? 'bg-[#050505] border-green-900/40 text-neutral-200 shadow-inner' 
-                    : 'bg-[#050505] border-transparent text-neutral-500 group-hover:bg-[#0a0a0a] group-hover:border-neutral-800'
+                    ? 'bg-[#050505]/80 border-[#00ff66]/30 text-white shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]' 
+                    : 'bg-[#050505] border-transparent text-neutral-500 group-hover:bg-[#080808] group-hover:border-neutral-800 shadow-inner'
                 }
               `}>
                 <div className="overflow-x-auto text-sm md:text-base pointer-events-none">
