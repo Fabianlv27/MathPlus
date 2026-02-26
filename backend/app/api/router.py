@@ -9,6 +9,10 @@ from app.data.default import default,default4
 router = APIRouter()
 
 
+async def defoult_solve_problem():
+    return default4
+
+@router.post("/solve", response_model=SolucionMath)
 async def solve_problem(
     query: str = Form(None), 
     file: UploadFile = File(None)
@@ -40,12 +44,6 @@ async def solve_problem(
         raise HTTPException(400, "El contenido no parece ser un problema matemático válido.")
     print("Resultado del Grafo:", result["final_json"])
     return result["final_json"]
-
-
-
-@router.post("/solve", response_model=SolucionMath)
-async def defoult_solve_problem():
-    return default4
 
 @router.post("/download-pdf")
 async def download_solution(solucion_raw: str = Form(...)):

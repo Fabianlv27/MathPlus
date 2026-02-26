@@ -32,7 +32,7 @@ class ContElement(BaseModel):
     status: str
 
 class ResourceElement(BaseModel):
-    step: int
+    step: list[int]
     title: str
     tex: str
 
@@ -50,3 +50,4 @@ class SolucionMath(BaseModel):
 class UserRequest(BaseModel):
     query: str
     file_content: Optional[str] = None # Para contenido de PDF parseado
+    

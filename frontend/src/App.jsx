@@ -6,7 +6,7 @@ import SidebarRecursos from './components/SidebarComponent';
 import SceneVisualEditor from './components/SceneVisualEditor';
 import { useMathTutor } from './hooks/useMathTutor';
 import { FileText, Edit3, ClipboardPaste } from 'lucide-react'; // <-- Importamos ClipboardPaste
-
+import { parseTextToJSON}from '../utils/textParser';
 // Utilidades del motor de renderizado
 import { calculateFramePositions } from '../utils/layoutEngine';
 import { fixLatexHighlighting, preventCollisions, calculateArrowPositions } from '../utils/latexFixer';

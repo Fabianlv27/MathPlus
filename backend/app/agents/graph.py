@@ -11,6 +11,8 @@ from app.agents.prompts import VALIDATOR_PROMPT, SOLVER_PROMPT, UX_PROMPT
 from google import genai
 from google.genai import types
 
+from app.services.JsonParser import parse_text_to_json
+
 class AgentState(TypedDict):
     user_input: str
     is_valid_math: bool
@@ -73,11 +75,10 @@ async def ux_scripter_node(state: AgentState):
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.1,
-                response_mime_type="application/json",
-                response_schema=SolucionMath
             )
         )
-        final_json = json.loads(response.text)
+        raw_text = response.text
+        final_json=parse_text_to_json(raw_text)
         print(f"✅ UX Scripter terminado en {time.time() - start_time:.2f}s ⚡")
         
     except Exception as e:
