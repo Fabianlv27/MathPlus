@@ -12,6 +12,7 @@ from google import genai
 from google.genai import types
 
 from app.services.JsonParser import parse_text_to_json
+from app.services.sanitazer import sanitize_latex_highlights
 
 class AgentState(TypedDict):
     user_input: str
@@ -78,7 +79,13 @@ async def ux_scripter_node(state: AgentState):
             )
         )
         raw_text = response.text
-        final_json=parse_text_to_json(raw_text)
+        raw_scene_dict=parse_text_to_json(raw_text)
+        if raw_scene_dict["escenas"]:
+            safe_text=sanitize_latex_highlights(raw_scene_dict["escenas"][0])
+            final_json={"escenas":[safe_text]}
+        else:
+            final_json=raw_scene_dict
+        
         print(f"✅ UX Scripter terminado en {time.time() - start_time:.2f}s ⚡")
         
     except Exception as e:

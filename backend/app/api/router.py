@@ -5,12 +5,14 @@ from app.agents.graph import app_graph
 from app.services.ocr import extract_text_from_pdf
 from app.services.pdf_gen import generate_solution_pdf
 from app.data.default import default,default4
+from app.services.sanitazer import sanitize_latex_highlights
 
 router = APIRouter()
 
 
+
 async def defoult_solve_problem():
-    return default4
+    return {"escenas":[sanitize_latex_highlights(default4)]}
 
 @router.post("/solve", response_model=SolucionMath)
 async def solve_problem(

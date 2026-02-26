@@ -1,0 +1,646 @@
+{
+    "escenas":[
+        {
+  "ig": "Resolución de Ecuaciones Radicales",
+  "cont": [
+    {
+      "type": "Latex",
+      "cont": "\\sqrt{2x-1} + 2 = x",
+      "x": 350,
+      "y": 100,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "show"
+    },
+    {
+      "type": "Latex",
+      "cont": "\\sqrt{2x-1} = x - 2",
+      "x": 350,
+      "y": 180,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "(\\sqrt{2x-1})^2 = (x - 2)^2",
+      "x": 350,
+      "y": 260,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "2x - 1 = x^2 - 4x + 4",
+      "x": 350,
+      "y": 340,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "0 = x^2 - 4x + 4 - 2x + 1",
+      "x": 350,
+      "y": 420,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "0 = x^2 - 6x + 5",
+      "x": 350,
+      "y": 500,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = \\frac{-(-6) \\pm \\sqrt{(-6)^2 - 4(1)(5)}}{2(1)}",
+      "x": 350,
+      "y": 600,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = \\frac{6 \\pm \\sqrt{36 - 20}}{2}",
+      "x": 350,
+      "y": 700,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = \\frac{6 \\pm \\sqrt{16}}{2}",
+      "x": 350,
+      "y": 800,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = \\frac{6 \\pm 4}{2}",
+      "x": 350,
+      "y": 900,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = 5 \\quad \\text{o} \\quad x = 1",
+      "x": 350,
+      "y": 980,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "2x - 1 \\ge 0 \\implies x \\ge 1/2",
+      "x": 350,
+      "y": 1060,
+      "toX": null,
+      "toY": null,
+      "apart": "start",
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x - 2 \\ge 0 \\implies x \\ge 2",
+      "x": 350,
+      "y": 1140,
+      "toX": null,
+      "toY": null,
+      "apart": "end",
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "\\sqrt{2(1)-1} + 2 = 1 \\implies 3 = 1",
+      "x": 350,
+      "y": 1220,
+      "toX": null,
+      "toY": null,
+      "apart": "start",
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "\\sqrt{2(5)-1} + 2 = 5 \\implies 5 = 5",
+      "x": 350,
+      "y": 1300,
+      "toX": null,
+      "toY": null,
+      "apart": "end",
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = 5",
+      "x": 350,
+      "y": 1380,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    }
+  ],
+  "resources": [
+    {
+      "step": [
+        3
+      ],
+      "title": "Binomio al Cuadrado",
+      "tex": "(a-b)^2 = a^2 - 2ab + b^2"
+    },
+    {
+      "step": [
+        3
+      ],
+      "title": "Propiedad de la Raíz Cuadrada",
+      "tex": "(\\sqrt{a})^2 = a"
+    },
+    {
+      "step": [
+        6
+      ],
+      "title": "Fórmula Cuadrática",
+      "tex": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}"
+    },
+    {
+      "step": [
+        11
+      ],
+      "title": "Restricción de Raíz Cuadrada",
+      "tex": "\\sqrt{A} \\implies A \\ge 0"
+    },
+    {
+      "step": [
+        12
+      ],
+      "title": "Restricción de Ecuaciones Radicales",
+      "tex": "Si \\sqrt{A} = B, entonces B \\ge 0"
+    }
+  ],
+  "insts": [
+    {
+      "msg": "¡Hola a todos! Hoy vamos a resolver una ecuación radical. Nuestra ecuación es la raíz cuadrada de 2x menos 1, más 2, igual a x.",
+      "tgs": [
+        {
+          "tg": "0:(0-f)",
+          "ac": "appear",
+          "color": null
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Comenzamos aislando el radical en un lado de la ecuación. Para lograrlo, restamos 2 de ambos lados.",
+      "tgs": [
+        {
+          "tg": "0:(14-17)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "0:(20-21)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "1:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "1:(14-18)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Para eliminar el radical, elevamos ambos lados de la ecuación al cuadrado. Esto nos permite deshacernos de la raíz cuadrada.",
+      "tgs": [
+        {
+          "tg": "1:(0-13)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "1:(14-18)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "2:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "2:(0-15)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "2:(18-27)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Ahora, simplificamos. El cuadrado de la raíz cuadrada nos da el argumento, y en el lado derecho, expandimos el binomio al cuadrado.",
+      "tgs": [
+        {
+          "tg": "2:(0-15)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "2:(18-27)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "3:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "3:(0-6)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "3:(9-19)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Reordenamos la ecuación para formar una ecuación cuadrática estándar, moviendo todos los términos del lado izquierdo al lado derecho.",
+      "tgs": [
+        {
+          "tg": "3:(0-6)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "4:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "4:(10-20)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Ahora, combinamos los términos semejantes.",
+      "tgs": [
+        {
+          "tg": "4:(7-10)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "4:(13-16)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "4:(20-21)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "4:(24-25)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "5:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "5:(4-13)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Tenemos una ecuación cuadrática. Usaremos la Fórmula Cuadrática para encontrar los valores de x.",
+      "tgs": [
+        {
+          "tg": "5:(4-13)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "6:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "6:(0-f)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Sustituimos los valores de a, b y c en la fórmula. Aquí, a es 1, b es -6 y c es 5.",
+      "tgs": [
+        {
+          "tg": "6:(4-50)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "6:(4-50)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "6:(4-50)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "6:(4-50)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "6:(4-50)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "7:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "7:(4-34)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "7:(4-34)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "7:(4-34)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Realizamos las operaciones dentro de la raíz y en el denominador.",
+      "tgs": [
+        {
+          "tg": "7:(4-34)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "8:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "8:(4-29)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Calculamos la raíz cuadrada de 16.",
+      "tgs": [
+        {
+          "tg": "8:(4-29)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "9:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "9:(4-21)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Ahora, separamos en dos soluciones posibles: una con el signo más y otra con el signo menos.",
+      "tgs": [
+        {
+          "tg": "9:(4-21)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "10:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "10:(12-20)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Es crucial verificar las restricciones del dominio de la ecuación original. Primero, el argumento de la raíz cuadrada debe ser no negativo.",
+      "tgs": [
+        {
+          "tg": "0:(5-12)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "11:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "11:(0-23)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Además, en una ecuación radical, el lado que no contiene el radical debe ser no negativo, ya que la raíz cuadrada principal siempre produce un valor no negativo.",
+      "tgs": [
+        {
+          "tg": "1:(14-18)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "12:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "12:(0-20)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Esto significa que x debe ser mayor o igual a 2. Ahora, comprobemos nuestras soluciones.",
+      "tgs": [
+        {
+          "tg": "10:(0-11)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Para x igual a 1, sustituimos en la ecuación original.",
+      "tgs": [
+        {
+          "tg": "13:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "13:(0-f)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Obtenemos 3 igual a 1, lo cual es falso. Por lo tanto, x igual a 1 es una solución extraña y la descartamos.",
+      "tgs": [
+        {
+          "tg": "13:(0-f)",
+          "ac": "resalt",
+          "color": "#EF4444"
+        },
+        {
+          "tg": "10:(12-17)",
+          "ac": "resalt",
+          "color": "#EF4444"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Ahora, para x igual a 5, sustituimos en la ecuación original.",
+      "tgs": [
+        {
+          "tg": "14:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "14:(0-f)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Obtenemos 5 igual a 5, lo cual es verdadero. Así que x igual a 5 es nuestra única solución válida.",
+      "tgs": [
+        {
+          "tg": "14:(0-f)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "10:(0-4)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "11:(0-f)",
+          "ac": "dim",
+          "color": null
+        },
+        {
+          "tg": "12:(0-f)",
+          "ac": "dim",
+          "color": null
+        },
+        {
+          "tg": "13:(0-f)",
+          "ac": "dim",
+          "color": null
+        },
+        {
+          "tg": "14:(0-f)",
+          "ac": "dim",
+          "color": null
+        },
+        {
+          "tg": "15:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "15:(0-4)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    }
+  ]
+}
+    ]
+}
