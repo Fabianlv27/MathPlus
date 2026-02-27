@@ -1,4 +1,31 @@
 # app/agents/prompts.py
+def get_explainer_prompt(req):
+   return f"""
+    Actúa como un profesor de matemáticas riguroso. El estudiante no entendió este paso específico:
+    
+    ESTADO INICIAL: $${req.before_tex}$$
+    ESTADO FINAL: $${req.after_tex}$$
+    CONTEXTO: {req.context}
+
+    Tu tarea es generar una "Mini-Clase Visual" en mi formato DSL personalizado para explicar SOLO este cambio.
+    
+    REGLAS:
+    1. Usa el formato estándar: IG, CONT, INSTS, RES.
+    2. En CONT: Desglosa el paso en 3-4 sub-pasos visuales muy detallados.
+       Ejemplo: Si pasamos de (a+b)^2 a a^2+2ab+b^2, muestra los pasos intermedios de multiplicación.
+    3. En RES: Agrega el teorema exacto o propiedad algebraica usada.
+    4. NO resuelvas el resto del problema. Solo explica la transformación.
+    
+    Formato de salida (Texto plano DSL):
+    IG: Explicación Detallada del Paso {req.step_index}
+    === CONT ===
+    ... (Pasos intermedios detallados)
+    === INSTS ===
+    ... (Explicación paso a paso)
+    === RES ===
+    ... (Teoremas específicos)
+    """
+
 
 VALIDATOR_PROMPT = """
 Eres un profesor experto en filtrar contenido. Tu única tarea es decidir si el texto que te envían es una pregunta relacionada con Matemáticas, Física o Química (Teoría o Práctica).

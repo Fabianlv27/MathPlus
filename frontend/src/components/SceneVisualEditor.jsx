@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { Save, X, Plus, Trash2, Code, MessageSquare, MousePointer2, ChevronRight, LayoutTemplate, BookOpen, Copy, ClipboardPaste } from 'lucide-react';
+import { 
+  Save, X, Plus, Trash2, Code, MessageSquare, MousePointer2, 
+  ChevronRight, LayoutTemplate, BookOpen, Copy, ClipboardPaste, 
+  ListPlus // <--- NUEVO IMPORT
+} from 'lucide-react';
 import WhiteboardPlayer from './WhiteboardPlayer';
 
 const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
@@ -8,7 +12,7 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
   const [previewStep, setPreviewStep] = useState(0);
 
   // ==========================================
-  // HERRAMIENTAS DE PORTAPAPELES (NUEVO)
+  // HERRAMIENTAS DE PORTAPAPELES
   // ==========================================
   const handleCopyJSON = async () => {
     try {
@@ -115,6 +119,54 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
     setPreviewStep(draft.insts.length);
   };
 
+  // --- NUEVA LÓGICA DE INSERCIÓN Y BORRADO DE PASOS ---
+
+  const insertStepAfter = (index) => {
+    const newIndex = index + 1;
+
+    // 1. Insertar nuevo paso vacío
+    const newInsts = [...draft.insts];
+    newInsts.splice(newIndex, 0, { 
+      msg: 'Nuevo paso intercalado...', 
+      tgs: [], 
+      fin: [] 
+    });
+
+    // 2. Actualizar índices en Recursos ("Empujar" hacia adelante)
+    const newRes = (draft.resources || []).map(res => {
+      const currentSteps = Array.isArray(res.step) ? res.step : [res.step];
+      const updatedSteps = currentSteps.map(stepIndex => {
+        // Si el recurso apunta a un paso posterior o igual al nuevo, se mueve +1
+        return stepIndex >= newIndex ? stepIndex + 1 : stepIndex;
+      });
+      return { ...res, step: updatedSteps };
+    });
+
+    setDraft({ ...draft, insts: newInsts, resources: newRes });
+    setPreviewStep(newIndex);
+  };
+
+  const removeStepAt = (index) => {
+    if (window.confirm("¿Seguro que quieres eliminar este paso? Los índices de recursos se reajustarán.")) {
+        // 1. Eliminar paso
+        const newInsts = draft.insts.filter((_, i) => i !== index);
+        
+        // 2. Actualizar índices en Recursos ("Empujar" hacia atrás)
+        const newRes = (draft.resources || []).map(res => {
+            const currentSteps = Array.isArray(res.step) ? res.step : [res.step];
+            const updatedSteps = currentSteps
+                .filter(s => s !== index) // Borrar referencia al paso eliminado
+                .map(s => (s > index ? s - 1 : s)); // Restar 1 a los pasos posteriores
+            return { ...res, step: updatedSteps };
+        });
+
+        setDraft({ ...draft, insts: newInsts, resources: newRes });
+        // Mover preview al anterior (o 0 si borramos el primero)
+        setPreviewStep(Math.max(0, index - 1));
+    }
+  };
+
+
   // ==========================================
   // 3. MANEJADORES DE RECURSOS (resources)
   // ==========================================
@@ -122,7 +174,6 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
     const newRes = [...(draft.resources || [])];
     
     if (field === 'step') {
-      // Parseamos el string "1, 2, 4" a un array [1, 2, 4]
       const arraySteps = value.split(',')
                               .map(s => parseInt(s.trim()))
                               .filter(n => !isNaN(n));
@@ -174,14 +225,13 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
   return (
     <div className="fixed inset-0 z-[200] bg-[#0a0a0a] flex flex-col overflow-hidden">
         
-      {/* HEADER PRINCIPAL CON BOTONES DE PORTAPAPELES */}
+      {/* HEADER PRINCIPAL */}
       <div className="flex justify-between items-center px-6 py-4 border-b border-neutral-800 bg-[#111] shrink-0 shadow-lg">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Code className="text-[#00ff66]" /> Editor Visual Multimodal
         </h2>
         
         <div className="flex items-center gap-4">
-          {/* BOTONES DE IMPORTAR/EXPORTAR JSON */}
           <div className="flex gap-2 border-r border-neutral-800 pr-4">
              <button onClick={handleCopyJSON} title="Copiar JSON al portapapeles" className="p-2 bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-[#00ff66] hover:border-[#00ff66]/50 rounded-lg transition">
                  <Copy size={18}/>
@@ -200,7 +250,7 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
 
       <div className="flex flex-1 overflow-hidden">
         
-        {/* PANEL IZQUIERDO: CONTROLES DEL EDITOR (45% ancho) */}
+        {/* PANEL IZQUIERDO */}
         <div className="w-[45%] flex flex-col border-r border-neutral-800 bg-[#0f1115]">
             <div className="flex border-b border-neutral-800 bg-[#111] shrink-0">
                 <button onClick={() => setActiveTab('insts')} className={`flex-1 py-3 text-xs md:text-sm font-bold uppercase tracking-wider flex justify-center items-center gap-2 transition-colors ${activeTab === 'insts' ? 'text-[#00ff66] border-b-2 border-[#00ff66] bg-[#1a1a1a]' : 'text-neutral-500 hover:text-neutral-300'}`}>
@@ -216,18 +266,36 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
 
             <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar">
                 
-                {/* ---------------------------------
-                    PESTAÑA 1: PASOS (insts)
-                    --------------------------------- */}
+                {/* PESTAÑA 1: PASOS (insts) */}
                 {activeTab === 'insts' && (
                     <div className="space-y-6">
                         {draft.insts.map((inst, i) => (
                             <div key={i} onClick={() => setPreviewStep(i)} className={`bg-[#111] border rounded-xl overflow-hidden transition-all duration-300 cursor-pointer ${previewStep === i ? 'border-[#00ff66] shadow-[0_0_15px_rgba(0,255,102,0.1)]' : 'border-neutral-800 hover:border-neutral-600'}`}>
+                                
+                                {/* HEADER DEL PASO CON BOTONES DE ACCIÓN */}
                                 <div className="bg-[#0a0a0a] px-4 py-2 border-b border-neutral-800 flex justify-between items-center">
                                     <span className="font-bold text-neutral-300 flex items-center gap-2">
                                         {previewStep === i && <ChevronRight size={16} className="text-[#00ff66]" />} Paso {i}
                                     </span>
+                                    
+                                    <div className="flex items-center gap-1">
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); insertStepAfter(i); }} 
+                                            className="p-1.5 text-neutral-400 hover:text-[#00ff66] hover:bg-neutral-800 rounded transition"
+                                            title="Insertar paso debajo"
+                                        >
+                                            <ListPlus size={16} />
+                                        </button>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); removeStepAt(i); }} 
+                                            className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-neutral-800 rounded transition"
+                                            title="Eliminar paso"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
+
                                 <div className="p-4 space-y-4">
                                     <div>
                                         <label className="text-[10px] text-[#00ff66] uppercase font-bold mb-1 block">Mensaje del Profesor</label>
@@ -271,13 +339,11 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
                                 </div>
                             </div>
                         ))}
-                        <button onClick={addStep} className="w-full py-4 border-2 border-dashed border-neutral-800 text-neutral-500 rounded-xl hover:border-[#00ff66] hover:text-[#00ff66] transition flex justify-center items-center gap-2 font-bold"><Plus size={18}/> Añadir Nuevo Paso</button>
+                        <button onClick={addStep} className="w-full py-4 border-2 border-dashed border-neutral-800 text-neutral-500 rounded-xl hover:border-[#00ff66] hover:text-[#00ff66] transition flex justify-center items-center gap-2 font-bold"><Plus size={18}/> Añadir Nuevo Paso (Al Final)</button>
                     </div>
                 )}
 
-                {/* ---------------------------------
-                    PESTAÑA 2: FÓRMULAS (cont)
-                    --------------------------------- */}
+                {/* PESTAÑA 2: FÓRMULAS (cont) */}
                 {activeTab === 'cont' && (
                     <div className="space-y-4 relative pl-4 border-l border-neutral-800 ml-2">
                         {draft.cont.map((el, i) => {
@@ -312,9 +378,7 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
                     </div>
                 )}
 
-            {/* ---------------------------------
-                    PESTAÑA 3: RECURSOS (resources)
-                    --------------------------------- */}
+            {/* PESTAÑA 3: RECURSOS (resources) */}
                 {activeTab === 'resources' && (
                     <div className="space-y-4">
                         {(draft.resources || []).map((res, i) => (
@@ -326,7 +390,6 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
                                         <input 
                                             type="text" 
                                             placeholder="Ej: 1, 3, 5"
-                                            // Usamos key para forzar la actualización y defaultValue para no perder comas al tipear
                                             key={Array.isArray(res.step) ? res.step.join(',') : res.step}
                                             defaultValue={Array.isArray(res.step) ? res.step.join(', ') : res.step} 
                                             onBlur={(e) => handleResourceChange(i, 'step', e.target.value)} 
@@ -351,7 +414,7 @@ const SceneVisualEditor = ({ sceneData, onSave, onCancel }) => {
             </div>
         </div>
 
-        {/* PANEL DERECHO: VISTA PREVIA EN VIVO (55% ancho) */}
+        {/* PANEL DERECHO: VISTA PREVIA */}
         <div className="w-[55%] bg-[#050505] p-6 flex flex-col relative">
             <div className="absolute top-8 right-8 z-10 bg-[#00ff66]/20 text-[#00ff66] border border-[#00ff66]/50 px-3 py-1 rounded-full text-[10px] uppercase font-bold animate-pulse flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#00ff66]"></span> Preview Real (Paso {previewStep})

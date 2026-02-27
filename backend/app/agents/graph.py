@@ -7,7 +7,6 @@ from langchain_groq import ChatGroq
 from app.models.schemas import SolucionMath
 from app.agents.prompts import VALIDATOR_PROMPT, SOLVER_PROMPT, UX_PROMPT, corrector_prompt
 
-# Importaciones del nuevo SDK de Google
 from google import genai
 from google.genai import types
 
@@ -21,36 +20,31 @@ class AgentState(TypedDict):
     structured_solution: str
     final_json: dict
     
-# 1. CLIENTE GEMINI (El Arquitecto del JSON)
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-# 2. CLIENTE GROQ RÁPIDO (El Portero)
 llm_fast = ChatGroq(
     api_key=settings.GROQ_API_KEY,
     model="llama-3.1-8b-instant", 
     temperature=0
 )
 
-# 3. CLIENTE GROQ INTELIGENTE (El Matemático)
 llm_resolver = ChatGroq(
     api_key=settings.GROQ_API_KEY,
     model="llama-3.3-70b-versatile", 
     temperature=0.1
 )
 
-# NODO 1: VALIDACIÓN (Groq 8B)
 async def validator_node(state: AgentState):
     """Verifica si el input es matemáticas."""
     print("🕵️ Iniciando Validator (Groq 8B)...")
     start_time = time.time()
     
-    response = await llm_fast.ainvoke(f"{VALIDATOR_PROMPT}\nInput: {state['user_input']}")
+    response = await llm_fast.ainvoke(f"{VALIDATOR_PROMPT}\nLo que el usuario a escrito es: {state['user_input']}")
     is_valid = "YES" in response.content.upper()
     
     print(f"✅ Validator terminado en {time.time() - start_time:.2f}s.")
     return {"is_valid_math": is_valid}
 
-# NODO 2: RESOLUCIÓN (Groq 70B)
 async def solver_node(state: AgentState):
     """Resuelve el problema matemático muy rápido y guarda la solución cruda."""
     print("🧠 Iniciando Solver (Groq 70B)...")
@@ -62,11 +56,9 @@ async def solver_node(state: AgentState):
     print(f"✅ Solver terminado en {time.time() - start_time:.2f}s.")
     return {"solution_raw": response.content}
 
-# NODO 3: MAQUETACIÓN (Gemini 1.5 Pro)
 async def ux_scripter_node(state: AgentState):
     """Convierte la solución en pasos JSON estructurados usando Gemini."""
     print("🎨 Iniciando UX Scripter (Gemini 1.5 Pro)...")
-    start_time = time.time()
     
     prompt = f"{UX_PROMPT}\nSolución Base (Básate en esto para crear los pasos):\n{state['solution_raw']}"
     
@@ -102,9 +94,7 @@ async def corrector_node(state: AgentState):
     except Exception as e:
         print(f"❌ Error en el corrector: {e}")
         return {"final_json": {}}
-# ==========================================
-# CONSTRUCCIÓN DEL GRAFO
-# ==========================================
+
 workflow = StateGraph(AgentState)
 
 workflow.add_node("validator", validator_node)

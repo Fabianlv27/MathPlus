@@ -18,14 +18,12 @@ const SidebarRecursos = ({ resources, currentStepIdx, onResourceClick }) => {
 
       <div className="space-y-5 max-h-[500px] md:max-h-[calc(100vh-150px)] overflow-y-auto pr-2 pt-2 custom-scrollbar">
         {resources.map((res, idx) => {
-          // AHORA COMPROBAMOS SI EL PASO ACTUAL EXISTE EN EL ARREGLO
           const stepArray = Array.isArray(res.step) ? res.step : [res.step];
           const isActive = stepArray.includes(currentStepIdx);
           
           return (
             <div 
               key={idx} 
-              // Hacemos que navegue al primer paso donde este recurso es usado
               onClick={() => onResourceClick(stepArray[0])}
               className={`
                 relative p-4 rounded-xl transition-all duration-300 ease-out cursor-pointer group
@@ -35,14 +33,12 @@ const SidebarRecursos = ({ resources, currentStepIdx, onResourceClick }) => {
                 }
               `}
             >
-              {/* Icono indicador activo */}
               {isActive && (
                 <div className="absolute top-3 right-3 text-[#00ff66] animate-pulse drop-shadow-[0_0_8px_rgba(0,255,102,0.8)]">
                   <Lightbulb size={18} />
                 </div>
               )}
               
-              {/* Icono hint al hacer hover en inactivos */}
               {!isActive && (
                 <div className="absolute top-3 right-3 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity">
                   <MousePointerClick size={16} />
@@ -63,7 +59,15 @@ const SidebarRecursos = ({ resources, currentStepIdx, onResourceClick }) => {
                     : 'bg-[#050505] border-transparent text-neutral-500 group-hover:bg-[#080808] group-hover:border-neutral-800 shadow-inner'
                 }
               `}>
-                <div className="overflow-x-auto text-sm md:text-base pointer-events-none">
+                {/* CAMBIO AQUI:
+                   1. Eliminado 'pointer-events-none'
+                   2. Agregado 'pointer-events-auto' (opcional, es el default)
+                   3. Agregado stopPropagation para que hacer click en el scroll no active la tarjeta
+                */}
+                <div 
+                    className="overflow-x-auto text-sm md:text-sm w-full custom-scrollbar pb-1 cursor-text"
+                    onClick={(e) => e.stopPropagation()} 
+                >
                   <Latex>{`$${res.tex}$`}</Latex>
                 </div>
               </div>
