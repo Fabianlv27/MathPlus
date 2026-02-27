@@ -5,7 +5,7 @@ from langgraph.graph import StateGraph, END
 from app.core.config import settings
 from langchain_groq import ChatGroq
 from app.models.schemas import SolucionMath
-from app.agents.prompts import VALIDATOR_PROMPT, SOLVER_PROMPT, UX_PROMPT
+from app.agents.prompts import VALIDATOR_PROMPT, SOLVER_PROMPT, UX_PROMPT, corrector_prompt
 
 # Importaciones del nuevo SDK de Google
 from google import genai
@@ -18,6 +18,7 @@ class AgentState(TypedDict):
     user_input: str
     is_valid_math: bool
     solution_raw: str
+    structured_solution: str
     final_json: dict
     
 # 1. CLIENTE GEMINI (El Arquitecto del JSON)
@@ -70,7 +71,6 @@ async def ux_scripter_node(state: AgentState):
     prompt = f"{UX_PROMPT}\nSolución Base (Básate en esto para crear los pasos):\n{state['solution_raw']}"
     
     try:
-        # Usamos el modelo estable 1.5-pro, que es el rey contando caracteres y JSON
         response = await client.aio.models.generate_content(
             model="gemini-2.5-flash", 
             contents=prompt,
@@ -78,6 +78,19 @@ async def ux_scripter_node(state: AgentState):
                 temperature=0.1,
             )
         )
+        return{"structured_solution": response.text}
+        
+        
+    except Exception as e:
+        print(f"❌ Error al generar estructura  con Gemini: {e}")
+        
+    return {"structured_solution": ""}
+ 
+async def corrector_node(state: AgentState):
+    """Corrige la solución si es necesario (opcional)."""
+    prompt=f"{corrector_prompt}\nSolución Actual:\n{state['structured_solution']}"
+    try:
+        response =await llm_resolver.ainvoke(prompt)
         raw_text = response.text
         raw_scene_dict=parse_text_to_json(raw_text)
         if raw_scene_dict["escenas"]:
@@ -85,15 +98,10 @@ async def ux_scripter_node(state: AgentState):
             final_json={"escenas":[safe_text]}
         else:
             final_json=raw_scene_dict
-        
-        print(f"✅ UX Scripter terminado en {time.time() - start_time:.2f}s ⚡")
-        
+        return {"final_json": final_json}
     except Exception as e:
-        print(f"❌ Error al parsear JSON con Gemini: {e}")
-        final_json = {"escenas": []}
-        
-    return {"final_json": final_json}
-    
+        print(f"❌ Error en el corrector: {e}")
+        return {"final_json": {}}
 # ==========================================
 # CONSTRUCCIÓN DEL GRAFO
 # ==========================================
@@ -102,6 +110,7 @@ workflow = StateGraph(AgentState)
 workflow.add_node("validator", validator_node)
 workflow.add_node("solver", solver_node)
 workflow.add_node("ux_scripter", ux_scripter_node)
+workflow.add_node("corrector",corrector_node)
 
 workflow.set_entry_point("validator")
 
@@ -120,6 +129,7 @@ workflow.add_conditional_edges(
 )
 
 workflow.add_edge("solver","ux_scripter")
-workflow.add_edge("ux_scripter", END)
+workflow.add_edge("ux_scripter", "corrector")
+workflow.add_edge("corrector", END)
 
 app_graph = workflow.compile()

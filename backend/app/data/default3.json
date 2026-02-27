@@ -1,0 +1,585 @@
+{
+    "escenas":[
+        {
+  "ig": "Resolviendo una Ecuación Cuadrática Compleja",
+  "cont": [
+    {
+      "type": "Latex",
+      "cont": "2\\left(x+\\frac{1}{2}\\right)^2+\\frac{25x}{2}=\\left(\\frac{1}{2}-x\\right)(7x+1)-4",
+      "x": 350,
+      "y": 100,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "show"
+    },
+    {
+      "type": "Latex",
+      "cont": "2\\left(x^2 + x + \\frac{1}{4}\\right) + \\frac{25x}{2} = \\left(\\frac{1}{2}-x\\right)(7x+1)-4",
+      "x": 350,
+      "y": 180,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "2x^2 + 2x + \\frac{1}{2} + \\frac{25x}{2} = \\left(\\frac{1}{2}-x\\right)(7x+1)-4",
+      "x": 350,
+      "y": 260,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "2x^2 + 2x + \\frac{1}{2} + \\frac{25x}{2} = \\frac{7x}{2} + \\frac{1}{2} - 7x^2 - x - 4",
+      "x": 350,
+      "y": 340,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "2x^2 + \\frac{4x}{2} + \\frac{1}{2} + \\frac{25x}{2} = \\frac{7x}{2} + \\frac{1}{2} - 7x^2 - \\frac{2x}{2} - 4",
+      "x": 350,
+      "y": 420,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "2x^2 + \\frac{29x}{2} + \\frac{1}{2} = -7x^2 + \\frac{5x}{2} - \\frac{7}{2}",
+      "x": 350,
+      "y": 500,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "2x^2 + 7x^2 + \\frac{29x}{2} - \\frac{5x}{2} + \\frac{1}{2} + \\frac{7}{2} = 0",
+      "x": 350,
+      "y": 580,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "9x^2 + \\frac{24x}{2} + \\frac{8}{2} = 0",
+      "x": 350,
+      "y": 660,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "9x^2 + 12x + 4 = 0",
+      "x": 350,
+      "y": 740,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
+      "x": 350,
+      "y": 870,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = \\frac{-12 \\pm \\sqrt{(12)^2 - 4(9)(4)}}{2(9)}",
+      "x": 350,
+      "y": 1000,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = \\frac{-12 \\pm \\sqrt{144 - 144}}{18}",
+      "x": 350,
+      "y": 1130,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = \\frac{-12 \\pm \\sqrt{0}}{18}",
+      "x": 350,
+      "y": 1260,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = \\frac{-12}{18}",
+      "x": 350,
+      "y": 1390,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    },
+    {
+      "type": "Latex",
+      "cont": "x = -\\frac{2}{3}",
+      "x": 350,
+      "y": 1520,
+      "toX": null,
+      "toY": null,
+      "apart": null,
+      "status": "hide"
+    }
+  ],
+  "resources": [
+    {
+      "step": [
+        1
+      ],
+      "title": "Binomio al Cuadrado",
+      "tex": "$(a+b)^2 = a^2 + 2ab + b^2$"
+    },
+    {
+      "step": [
+        2,
+        3
+      ],
+      "title": "Propiedad Distributiva",
+      "tex": "$a(b+c) = ab + ac \\quad \\text{y} \\quad (a+b)(c+d) = ac+ad+bc+bd$"
+    },
+    {
+      "step": [
+        9
+      ],
+      "title": "Fórmula Cuadrática",
+      "tex": "$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$"
+    }
+  ],
+  "insts": [
+    {
+      "msg": "¡Hola a todos! Hoy vamos a resolver una ecuación cuadrática compleja que requiere varios pasos de simplificación.",
+      "tgs": [
+        {
+          "tg": "0:(0-f)",
+          "ac": "appear",
+          "color": null
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "El primer paso es expandir el término al cuadrado en el lado izquierdo de la ecuación. Usaremos la fórmula del binomio al cuadrado.",
+      "tgs": [
+        {
+          "tg": "0:(1-29)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "1:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "1:(6-35)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Ahora, distribuimos el 2 que multiplica al binomio expandido en el lado izquierdo.",
+      "tgs": [
+        {
+          "tg": "1:(0-35)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "2:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "2:(0-23)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "A continuación, expandimos el producto de los dos binomios en el lado derecho de la ecuación.",
+      "tgs": [
+        {
+          "tg": "2:(42-74)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "3:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "3:(42-79)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Para facilitar la combinación de términos, vamos a expresar los términos con 'x' que no son fracciones, como fracciones con denominador 2.",
+      "tgs": [
+        {
+          "tg": "3:(0-4)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "3:(76-79)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "4:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "4:(7-19)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Ahora, combinamos los términos semejantes en cada lado de la ecuación.",
+      "tgs": [
+        {
+          "tg": "4:(52-104)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "5:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "5:(0-34)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "5:(37-71)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Movemos todos los términos del lado derecho al lado izquierdo de la ecuación para igualarla a cero.",
+      "tgs": [
+        {
+          "tg": "5:(37-42)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "6:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "6:(5-11)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "6:(28-42)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "6:(57-70)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Agrupamos y combinamos los términos semejantes: los términos con x al cuadrado, los términos con x, y las constantes.",
+      "tgs": [
+        {
+          "tg": "6:(0-11)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "6:(14-42)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "6:(45-70)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "7:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "7:(0-4)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "7:(7-20)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "7:(23-34)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Ahora, simplificamos las fracciones resultantes.",
+      "tgs": [
+        {
+          "tg": "7:(7-20)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "7:(23-34)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "8:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "8:(7-10)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "8:(13-14)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Hemos llegado a una ecuación cuadrática en su forma estándar: ax^2 + bx + c = 0. Para resolverla, utilizaremos la fórmula cuadrática.",
+      "tgs": [
+        {
+          "tg": "8:(0-18)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "9:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "9:(4-38)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Identificamos los valores de a, b y c de nuestra ecuación. Aquí, a es 9, b es 12 y c es 4. Sustituimos estos valores en la fórmula cuadrática.",
+      "tgs": [
+        {
+          "tg": "8:(0-1)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "8:(7-9)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "8:(13-14)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "10:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "10:(4-48)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "10:(4-48)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "10:(4-48)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "10:(4-48)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Calculamos los términos dentro de la raíz cuadrada y el denominador.",
+      "tgs": [
+        {
+          "tg": "10:(4-48)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "10:(4-48)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "10:(4-48)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "11:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "11:(4-39)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "11:(4-39)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        },
+        {
+          "tg": "11:(4-39)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Realizamos la resta dentro de la raíz cuadrada.",
+      "tgs": [
+        {
+          "tg": "11:(4-39)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "12:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "12:(4-31)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "La raíz cuadrada de cero es cero, lo que significa que tenemos una única solución.",
+      "tgs": [
+        {
+          "tg": "12:(4-31)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "13:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "13:(4-18)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    },
+    {
+      "msg": "Finalmente, simplificamos la fracción para obtener el valor de x.",
+      "tgs": [
+        {
+          "tg": "13:(4-18)",
+          "ac": "resalt",
+          "color": "#FCD34D"
+        },
+        {
+          "tg": "14:(0-f)",
+          "ac": "appear",
+          "color": null
+        },
+        {
+          "tg": "14:(4-16)",
+          "ac": "resalt",
+          "color": "#4ADE80"
+        }
+      ],
+      "fin": []
+    }
+  ]
+}
+    ]
+}

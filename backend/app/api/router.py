@@ -6,15 +6,9 @@ from app.services.ocr import extract_text_from_pdf
 from app.services.pdf_gen import generate_solution_pdf
 from app.data.default import default,default4
 from app.services.sanitazer import sanitize_latex_highlights
-
+from app.services.JsonParser import parse_text_to_json
 router = APIRouter()
 
-
-
-async def defoult_solve_problem():
-    return {"escenas":[sanitize_latex_highlights(default4)]}
-
-@router.post("/solve", response_model=SolucionMath)
 async def solve_problem(
     query: str = Form(None), 
     file: UploadFile = File(None)
@@ -38,6 +32,7 @@ async def solve_problem(
         "user_input": user_input, 
         "is_valid_math": False,
         "solution_raw": "", 
+        "structured_solution": "",
         "final_json": {}
     }
     result = await app_graph.ainvoke(initial_state)
@@ -47,7 +42,18 @@ async def solve_problem(
     print("Resultado del Grafo:", result["final_json"])
     return result["final_json"]
 
-@router.post("/download-pdf")
+
+
+
+async def defoult_solve_problem():
+    return {"escenas":[sanitize_latex_highlights(default4)]}
+
+@router.post("/solve")
+async def default_json_problem():
+    json_res=parse_text_to_json(default4)
+    return json_res
+
+@router.post("/download-pdf",response_model=SolucionMath)
 async def download_solution(solucion_raw: str = Form(...)):
     """Genera y descarga el PDF bajo demanda basado en la solución"""
     path = generate_solution_pdf(solucion_raw)
