@@ -66,10 +66,23 @@ def parse_text_to_json(raw_text: str) -> dict:
                         action = parts[1]
                         color_str = parts[-1]
                         
-                        # Reconstruimos valor y limpiamos comillas
+                        # Reconstruimos valor original (por si tenía | dentro)
                         value = "|".join(parts[2:-1]).strip()
+
+                        # --- LIMPIEZA TOTAL DE DELIMITADORES (ANTI-FANTASMAS) ---
+                        # 1. Quitamos comillas de string JSON si la IA las puso
                         if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
                             value = value[1:-1]
+                        
+                        # 2. Quitamos TODA la basura de delimitadores LaTeX que la IA suele agregar por error
+                        # Esto arregla: $x$, $$x$$, \(x\), \[x\]
+                        value = value.replace("$$", "") # Bloque doble
+                        value = value.replace("$", "")  # Inline simple
+                        value = value.replace("\\[", "").replace("\\]", "") # Bloque LaTeX
+                        value = value.replace("\\(", "").replace("\\)", "") # Inline LaTeX
+                        
+                        value = value.strip() # Quitar espacios sobrantes al final
+                        # ---------------------------------------
 
                         color = None if color_str == 'null' or not color_str else color_str
                         
@@ -90,18 +103,19 @@ def parse_text_to_json(raw_text: str) -> dict:
                                 if idx < len(scene["cont"]):
                                     latex_original = scene["cont"][idx]["cont"]
                                     
-                                    # A. Encontrar la palabra base
+                                    # A. Encontrar la palabra base (Ahora limpia de $)
                                     inicio = latex_original.find(value)
                                     
                                     if inicio != -1:
                                         fin = inicio + len(value)
 
                                         # --- FASE 1: IMÁN HACIA ATRÁS (Regex Look-behind) ---
-                                        # Atrapa coeficientes (2, -5, 3.14) y prefijos (\left, \big) pegados
+                                        # VERSION AJUSTADA: Atrapa comandos prefijos (\left, \big) 
+                                        # PERO YA NO ATRAPA NÚMEROS NI SIGNOS (-5, 2).
                                         texto_previo = latex_original[:inicio]
                                         
-                                        # Regex: (Numero opcional) + (Espacios) + (Comando opcional) + Fin de string
-                                        patron_atras = r'(?:(?P<num>[+\-]?\d+(?:\.\d+)?)\s*)?(?:(?P<cmd>\\(?:left|big|Big|bigg|Bigg)[lr]?)\s*)?$'
+                                        # Regex: Solo busca comandos de tamaño/delimitación + espacios opcionales
+                                        patron_atras = r'(?:(?P<cmd>\\(?:left|big|Big|bigg|Bigg)[lr]?)\s*)?$'
                                         
                                         match_atras = re.search(patron_atras, texto_previo)
                                         if match_atras:

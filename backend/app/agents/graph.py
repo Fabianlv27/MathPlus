@@ -5,7 +5,7 @@ from langgraph.graph import StateGraph, END
 from app.core.config import settings
 from langchain_groq import ChatGroq
 from app.models.schemas import SolucionMath
-from app.agents.prompts import VALIDATOR_PROMPT, SOLVER_PROMPT, UX_PROMPT, corrector_prompt
+from app.agents.prompts import VALIDATOR_PROMPT, SOLVER_PROMPT, UX_PROMPT, corrector_prompt, get_explainer_prompt
 
 from google import genai
 from google.genai import types
@@ -19,6 +19,8 @@ class AgentState(TypedDict):
     solution_raw: str
     structured_solution: str
     final_json: dict
+    req:dict
+    explain:bool
     
 client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
@@ -34,6 +36,9 @@ llm_resolver = ChatGroq(
     temperature=0.1
 )
 
+async def route_node(state: AgentState):
+    return
+
 async def validator_node(state: AgentState):
     """Verifica si el input es matemáticas."""
     print("🕵️ Iniciando Validator (Groq 8B)...")
@@ -44,6 +49,16 @@ async def validator_node(state: AgentState):
     
     print(f"✅ Validator terminado en {time.time() - start_time:.2f}s.")
     return {"is_valid_math": is_valid}
+
+async def explainer_node(state: AgentState):
+    prompt=get_explainer_prompt(state["req"])
+    try:
+        response =await llm_resolver.ainvoke(prompt) 
+        return {"solution_raw": response.content}
+        
+    except Exception as e:
+        print(f"❌ Error al generar explicaciones con Groq: {e}")
+        return {"final_json": {}}
 
 async def solver_node(state: AgentState):
     """Resuelve el problema matemático muy rápido y guarda la solución cruda."""
@@ -60,7 +75,7 @@ async def ux_scripter_node(state: AgentState):
     """Convierte la solución en pasos JSON estructurados usando Gemini."""
     print("🎨 Iniciando UX Scripter (Gemini 1.5 Pro)...")
     
-    prompt = f"{UX_PROMPT}\nSolución Base (Básate en esto para crear los pasos):\n{state['solution_raw']}"
+    prompt = f"{UX_PROMPT}\nSolución Base (Básate en esto para crear los pasos) ten en cuenta que tambien se puede tratar de una explicacion de una parte de un problema , si es asi ,no saludes y sigue al pie de la letra los pasos dados: \n{state['solution_raw']}"
     
     try:
         response = await client.aio.models.generate_content(
@@ -97,18 +112,34 @@ async def corrector_node(state: AgentState):
 
 workflow = StateGraph(AgentState)
 
+workflow.add_node("route", route_node)
 workflow.add_node("validator", validator_node)
 workflow.add_node("solver", solver_node)
 workflow.add_node("ux_scripter", ux_scripter_node)
+workflow.add_node("explainer", explainer_node)
 workflow.add_node("corrector",corrector_node)
 
-workflow.set_entry_point("validator")
+workflow.set_entry_point("route")
 
 def check_validity(state: AgentState):
+       
     if state["is_valid_math"]:
         return "solver"
     return END
 
+def check_explainer(state: AgentState):
+    if state["explain"]:
+        return "explainer"
+    return "validator"
+
+workflow.add_conditional_edges(
+    "route",
+    check_explainer,
+    {
+        "explainer": "explainer",
+        "validator": "validator"
+    }
+)
 workflow.add_conditional_edges(
     "validator",
     check_validity,
@@ -119,6 +150,7 @@ workflow.add_conditional_edges(
 )
 
 workflow.add_edge("solver","ux_scripter")
+workflow.add_edge("explainer","ux_scripter")
 workflow.add_edge("ux_scripter", "corrector")
 workflow.add_edge("corrector", END)
 

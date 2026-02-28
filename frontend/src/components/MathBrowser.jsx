@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Layout } from 'lucide-react'; // Quitamos Plus y ChevronRight si no se usan
+import { X, Sparkles, Layout } from 'lucide-react'; 
 import WhiteboardPlayer from './WhiteboardPlayer';
 
-// 1. AÑADIMOS onToggleFullscreen e isFullscreen A LOS PROPS
 const MathBrowser = ({ initialScene, onToggleFullscreen, isFullscreen }) => {
   const [tabs, setTabs] = useState([
     { id: 'main', title: 'Problema Principal', data: initialScene, activeStep: 0 }
@@ -18,18 +17,28 @@ const MathBrowser = ({ initialScene, onToggleFullscreen, isFullscreen }) => {
     if (activeTabId === tabId) setActiveTabId('main');
   };
 
-  const handleAskForExplanation = async (stepIndex, currentEquation, nextEquation) => {
+  // --- NUEVA FUNCIÓN PARA GUARDAR EL PASO AL NAVEGAR ---
+  const handleStepChange = (newStep) => {
+    setTabs(prevTabs => prevTabs.map(tab => 
+        tab.id === activeTabId ? { ...tab, activeStep: newStep } : tab
+    ));
+  };
+
+  // --- AHORA RECIBE 'userQuery' DEL MODAL ---
+  const handleAskForExplanation = async (stepIndex, currentEquation, nextEquation, userQuery) => {
     setLoading(true);
     try {
-        // Ajusta la URL si tu backend corre en otro puerto
-        const response = await fetch('http://localhost:8000/explain_step', {
+        // Concatenamos la duda del usuario al contexto
+        const finalContext = `Solicitud del usuario. DUDA ESPECÍFICA DEL ALUMNO: "${userQuery || 'Explícame este paso en general'}"`;
+
+        const response = await fetch('http://localhost:8000/explain_step', { // Verifica tu puerto/ruta
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 step_index: stepIndex,
                 before_tex: currentEquation,
                 after_tex: nextEquation,
-                context: "Solicitud del usuario"
+                context: finalContext // <--- AQUÍ VA LA DUDA
             })
         });
         
@@ -47,7 +56,7 @@ const MathBrowser = ({ initialScene, onToggleFullscreen, isFullscreen }) => {
         setActiveTabId(newTabId);
 
     } catch (error) {
-        alert("Error generando la explicación. Asegúrate de que el backend esté corriendo y soporte '/explain_step'.");
+        alert("Error generando la explicación. Revisa la consola.");
         console.error(error);
     } finally {
         setLoading(false);
@@ -57,8 +66,6 @@ const MathBrowser = ({ initialScene, onToggleFullscreen, isFullscreen }) => {
   const activeTab = tabs.find(t => t.id === activeTabId);
 
   return (
-    // 2. CAMBIO CRÍTICO: 'h-full' EN LUGAR DE 'h-screen'
-    // Esto asegura que los controles de abajo no se salgan del contenedor de 650px
     <div className="flex flex-col h-full bg-[#050505] overflow-hidden">
       
       {/* BARRA DE PESTAÑAS */}
@@ -99,7 +106,7 @@ const MathBrowser = ({ initialScene, onToggleFullscreen, isFullscreen }) => {
         {loading && (
             <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center flex-col">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#00ff66]"></div>
-                <p className="text-[#00ff66] mt-4 font-mono text-sm animate-pulse">Generando explicación rigurosa...</p>
+                <p className="text-[#00ff66] mt-4 font-mono text-sm animate-pulse">Consultando a la IA...</p>
             </div>
         )}
 
@@ -107,9 +114,14 @@ const MathBrowser = ({ initialScene, onToggleFullscreen, isFullscreen }) => {
             <WhiteboardPlayer 
                 key={activeTab.id} 
                 scenes={[activeTab.data]} 
-                onExplainRequest={!activeTab.isExplanation ? handleAskForExplanation : null}
                 
-                // 3. PASAMOS LOS PROPS DE FULLSCREEN HACIA ABAJO
+                // PASAMOS EL ESTADO GUARDADO
+                initialStep={activeTab.activeStep}
+                
+                // ESCUCHAMOS CAMBIOS DE PASO
+                onStepChange={handleStepChange}
+
+                onExplainRequest={!activeTab.isExplanation ? handleAskForExplanation : null}
                 onToggleFullscreen={onToggleFullscreen}
                 isFullscreen={isFullscreen}
             />

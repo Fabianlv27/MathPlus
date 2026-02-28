@@ -19,7 +19,18 @@ async def default_json_problem():
 
 @router.post("/explain_step")
 async def explain_step_deeply(req: ExplainRequest):
-    return await Explainer(req)
+    initial_state = {
+        "user_input": "", 
+        "is_valid_math": False,
+        "solution_raw": "", 
+        "structured_solution": "",
+        "final_json": {},
+        "req": req,
+        "explain": True
+    }
+    result = await app_graph.ainvoke(initial_state)
+    return result["final_json"]
+
 async def defoult_solve_problem():
     return {"escenas":[sanitize_latex_highlights(default4)]}
 
@@ -48,7 +59,9 @@ async def solve_problem(
         "is_valid_math": False,
         "solution_raw": "", 
         "structured_solution": "",
-        "final_json": {}
+        "final_json": {},
+        "req": None,
+        "explain": False
     }
     result = await app_graph.ainvoke(initial_state)
 

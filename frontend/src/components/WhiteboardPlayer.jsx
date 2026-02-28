@@ -3,14 +3,13 @@ import { InlineMath } from 'react-katex';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Pause, RefreshCw, Video, VideoOff, SkipForward, 
-  Maximize, Minimize, Sparkles, BookOpen, X,ChevronUp, ChevronDown // <--- Agregamos BookOpen y X
+  Maximize, Minimize, Sparkles, BookOpen, X, ChevronUp, ChevronDown 
 } from 'lucide-react';
 import 'katex/dist/katex.min.css';
-import SidebarRecursos from './SidebarComponent'; // <--- Importamos el componente existente
+import SidebarRecursos from './SidebarComponent';
 
-// ... (MANTENER LA FUNCIÓN injectHighlights IGUAL QUE ANTES) ...
+// --- 1. FUNCIÓN DE INYECCIÓN DE COLORES ---
 const injectHighlights = (latex, highlights = []) => {
-    // ... tu código de injectHighlights ...
     if (!highlights || highlights.length === 0) return latex;
     try {
         const charColors = new Array(latex.length).fill(null);
@@ -33,31 +32,62 @@ const injectHighlights = (latex, highlights = []) => {
     } catch (e) { return latex; }
 };
 
-// ... (MANTENER ElementoLatex IGUAL QUE ANTES) ...
+// --- 2. COMPONENTE DE ELEMENTO LATEX (CORREGIDO: BOLA VERDE ESTABLE) ---
+// --- 2. COMPONENTE DE ELEMENTO LATEX (ESTABILIZADO) ---
 const ElementoLatex = ({ data, state, onClick, stepIndex, isCurrentStep }) => {
-    // ... tu código de ElementoLatex ...
+    // NOTA: Ya no necesitamos uniqueScopeId porque quitaremos la animación de transporte
+    
     const highlights = state?.highlights || [];
     const isVisible = state?.visible || false;
     const finalLatex = injectHighlights(data.cont, highlights);
+    
     const isInteractive = isVisible && stepIndex !== undefined;
 
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: isVisible ? 1 : 0, top: data.y }}
+            animate={{ 
+                opacity: isVisible ? 1 : 0, 
+                top: data.y 
+            }}
             transition={{ duration: 0.4 }}
             onClick={(e) => {
                 if (isInteractive) {
-                    e.preventDefault(); e.stopPropagation(); onClick(stepIndex);
+                    e.preventDefault();
+                    e.stopPropagation(); 
+                    onClick(stepIndex);
                 }
             }}
-            className={`absolute flex items-center rounded-xl z-10 select-none transition-all duration-300 py-2 ${isInteractive ? 'cursor-pointer hover:bg-white/5' : 'pointer-events-none'}`}
-            style={{ left: `${data.x}px`, transform: 'translate(0%, -50%)', color: isCurrentStep ? '#ffffff' : '#94a3b8', minHeight: '50px' }}
+            className={`absolute flex items-center rounded-xl z-50 select-none transition-all duration-300 py-2
+                ${isInteractive ? 'cursor-pointer hover:bg-white/5' : 'pointer-events-none'}
+            `}
+            style={{ 
+                left: `${data.x}px`, 
+                transform: 'translate(0%, -50%)', 
+                color: isCurrentStep ? '#ffffff' : '#94a3b8', 
+                minHeight: '50px'
+            }}
             title={isInteractive ? `Ir al paso ${stepIndex + 1}` : ""}
         >
-            {isCurrentStep && (
-                <motion.div layoutId="active-step-circle" className="absolute -left-10 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#00ff66] rounded-full shadow-[0_0_12px_#00ff66]" initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }} />
-            )}
+            {/* CAMBIO IMPORTANTE:
+               Eliminamos 'layoutId'. Esto desactiva el cálculo de trayectoria física 
+               que causaba la vibración de derecha a izquierda.
+               Ahora la bola simplemente aparece y desaparece suavemente.
+            */}
+            <AnimatePresence> 
+                {isCurrentStep && (
+                    <motion.div 
+                        className="absolute -left-10 top-1/2 -translate-y-1/2 w-4 h-4 bg-[#00ff66] rounded-full shadow-[0_0_12px_#00ff66]"
+                        
+                        initial={{ scale: 0, opacity: 0 }} 
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                    />
+                )}
+            </AnimatePresence>
+            
             <span className={`whitespace-nowrap pointer-events-none transition-all duration-300 ${isCurrentStep ? 'font-medium' : 'font-normal'} text-lg md:text-2xl`}>
                 <InlineMath math={finalLatex} />
             </span>
@@ -65,27 +95,38 @@ const ElementoLatex = ({ data, state, onClick, stepIndex, isCurrentStep }) => {
     );
 };
 
-const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, onToggleFullscreen, isFullscreen, onExplainRequest }) => {
+// --- 3. REPRODUCTOR PRINCIPAL ---
+const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, initialStep = 0, onToggleFullscreen, isFullscreen, onExplainRequest }) => {
     if (!scenes || scenes.length === 0) return <div className="p-10 text-center text-slate-400">Cargando cuaderno...</div>;
 
     const [currentSceneIdx, setCurrentSceneIdx] = useState(0);
-    const [currentStepIdx, setCurrentStepIdx] = useState(-1);
-    const [maxStepReached, setMaxStepReached] = useState(-1);
+    const scene = scenes[currentSceneIdx];
+
+    // Generamos un ID único para este scope basado en el título (Evita conflictos de layoutId)
+    const uniqueScopeId = useMemo(() => {
+        return scene?.ig ? scene.ig.replace(/\s+/g, '-') : 'default-scope';
+    }, [scene]);
+
+    // Estados de navegación
+    const [currentStepIdx, setCurrentStepIdx] = useState(initialStep >= 0 ? initialStep : -1);
+    const [maxStepReached, setMaxStepReached] = useState(initialStep >= 0 ? initialStep : -1);
     const [isPlaying, setIsPlaying] = useState(false);
+    
+    // Estados visuales
     const [elementStates, setElementStates] = useState({});
     const [collapsedBoxes, setCollapsedBoxes] = useState({});
     const [autoPan, setAutoPan] = useState(true);
-    
-    // ESTADO PARA EL PANEL LATERAL
     const [isResourcesOpen, setIsResourcesOpen] = useState(false);
+
+    // Estados del Modal de Explicación
+    const [showExplainModal, setShowExplainModal] = useState(false);
+    const [userQuery, setUserQuery] = useState("");
 
     const scrollContainerRef = useRef(null);
     const synth = useRef(window.speechSynthesis);
     const isManualJump = useRef(false);
 
-    const scene = scenes[currentSceneIdx];
-
-    // ... (MANTENER useMemo de elementToStepMap, activeIndex y layoutData IGUALES) ...
+    // --- CÁLCULOS MEMOIZADOS (MAPAS Y LAYOUT) ---
     const elementToStepMap = useMemo(() => {
         const map = {};
         if (!scene) return map;
@@ -157,18 +198,28 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, onToggleFullscr
         return { elements: finalElements, boxes: visualBoxes, totalHeight: maxGlobalY + 300 };
     }, [scene, collapsedBoxes]);
 
-    // ... (MANTENER TODOS LOS useEffects IGUALES) ...
+    // --- EFECTOS ---
     useEffect(() => { if (currentStepIdx > maxStepReached) setMaxStepReached(currentStepIdx); }, [currentStepIdx]); 
     useEffect(() => { if (requestedStep !== null && requestedStep !== undefined && requestedStep !== currentStepIdx) handleJumpToStep(requestedStep); }, [requestedStep]);
     useEffect(() => { if (onStepChange) onStepChange(currentStepIdx); }, [currentStepIdx, onStepChange]);
+
+    // Inicialización (Respetando initialStep)
     useEffect(() => {
-        setCurrentStepIdx(-1); setMaxStepReached(-1); setIsPlaying(false); setCollapsedBoxes({});
+        if (initialStep === undefined || initialStep === null) {
+            setCurrentStepIdx(-1);
+            setMaxStepReached(-1);
+        }
+        setIsPlaying(false);
+        setCollapsedBoxes({});
         synth.current.cancel(); 
         if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
+        
         const initialState = {};
         scene.cont.forEach((el, idx) => initialState[idx] = { visible: el.status === 'show', highlights: [] });
         setElementStates(initialState);
     }, [currentSceneIdx, scene]);
+
+    // Text-to-Speech
     useEffect(() => {
         synth.current.cancel();
         if (currentStepIdx === -1 || !isPlaying) return;
@@ -187,6 +238,8 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, onToggleFullscr
         const timer = setTimeout(() => synth.current.speak(utterance), 10);
         return () => clearTimeout(timer);
     }, [currentStepIdx, isPlaying, scene]); 
+
+    // Lógica de Animación y Scroll
     useEffect(() => {
         if (currentStepIdx === -1) {
              const initialState = {};
@@ -244,7 +297,7 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, onToggleFullscr
         setElementStates(newState);
     }, [currentStepIdx, maxStepReached, autoPan, scene, layoutData, collapsedBoxes, activeIndex]); 
 
-    // Funciones de control
+    // --- FUNCIONES DE CONTROL ---
     const handleJumpToStep = (step) => { isManualJump.current = true; synth.current.cancel(); setCurrentStepIdx(step); setIsPlaying(false); };
     const handleSkip = () => { if (currentStepIdx < scene.insts.length - 1) { isManualJump.current = true; synth.current.cancel(); setCurrentStepIdx(prev => prev + 1); setIsPlaying(true); } };
     const togglePlay = () => {
@@ -254,6 +307,17 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, onToggleFullscr
             if (isPlaying) { isManualJump.current = true; synth.current.cancel(); setIsPlaying(false); } 
             else setIsPlaying(true);
         }
+    };
+
+    const confirmExplanation = () => {
+        if (!onExplainRequest) return;
+        const activeEqIdx = activeIndex !== -1 ? activeIndex : 0;
+        const ecActual = scene.cont[activeEqIdx]?.cont || "";
+        const ecSiguiente = scene.cont[activeEqIdx + 1]?.cont || ecActual;
+        
+        onExplainRequest(currentStepIdx, ecActual, ecSiguiente, userQuery);
+        setShowExplainModal(false);
+        setUserQuery("");
     };
 
     return (
@@ -266,16 +330,9 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, onToggleFullscr
                      <button onClick={() => setAutoPan(!autoPan)} className={`px-3 py-1.5 rounded transition flex items-center gap-2 text-xs font-bold uppercase tracking-wide border ${autoPan ? 'text-green-400 bg-green-950/30 border-green-800/50' : 'text-neutral-500 bg-neutral-900 border-neutral-800 hover:text-neutral-300'}`}>
                         {autoPan ? <Video size={16}/> : <VideoOff size={16}/>} <span className="hidden sm:inline">{autoPan ? "Auto" : "Manual"}</span>
                      </button>
-                     
-                     {/* BOTÓN TOGGLE RECURSOS (NUEVO) */}
-                     <button 
-                         onClick={() => setIsResourcesOpen(!isResourcesOpen)}
-                         className={`px-3 py-1.5 rounded transition flex items-center gap-2 text-xs font-bold uppercase tracking-wide border ${isResourcesOpen ? 'text-[#00ff66] border-[#00ff66]/50 bg-[#00ff66]/10' : 'text-neutral-500 bg-neutral-900 border-neutral-800 hover:text-white'}`}
-                         title="Ver Recursos y Teoría"
-                     >
+                     <button onClick={() => setIsResourcesOpen(!isResourcesOpen)} className={`px-3 py-1.5 rounded transition flex items-center gap-2 text-xs font-bold uppercase tracking-wide border ${isResourcesOpen ? 'text-[#00ff66] border-[#00ff66]/50 bg-[#00ff66]/10' : 'text-neutral-500 bg-neutral-900 border-neutral-800 hover:text-white'}`} title="Ver Recursos y Teoría">
                          <BookOpen size={16}/> <span className="hidden sm:inline">Recursos</span>
                      </button>
-
                      {onToggleFullscreen && (
                          <button onClick={onToggleFullscreen} className="px-3 py-1.5 rounded transition flex items-center gap-2 text-xs font-bold uppercase tracking-wide border text-neutral-500 bg-neutral-900 border-neutral-800 hover:text-[#00ff66] hover:border-green-900/50">
                              {isFullscreen ? <Minimize size={16}/> : <Maximize size={16}/>}
@@ -288,12 +345,8 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, onToggleFullscr
             <div className="flex-grow relative overflow-hidden flex">
                 
                 {/* CANVAS SCROLLABLE */}
-                <div 
-                    ref={scrollContainerRef}
-                    className="flex-grow bg-[#0f1115] overflow-y-auto overflow-x-hidden custom-scrollbar relative"
-                >
+                <div ref={scrollContainerRef} className="flex-grow bg-[#0f1115] overflow-y-auto overflow-x-hidden custom-scrollbar relative">
                     <div className="relative w-full" style={{ height: `${layoutData.totalHeight}px` }}>
-                        {/* Renderizado de Líneas, Cajas y Fórmulas (Igual que antes) */}
                         {layoutData.elements.map((el, idx) => {
                             if (!elementStates[idx]?.visible || el.isHiddenByBox) return null;
                             return <div key={`line-${idx}`} className="absolute w-full border-b border-dashed border-green-900/30" style={{ top: el.shiftedY + 40 }} />;
@@ -320,47 +373,38 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, onToggleFullscr
                             const renderData = { ...el, x: processedEl.x, y: processedEl.shiftedY };
                             const renderState = { ...state, visible: state.visible && !processedEl.isHiddenByBox };
                             const isCurrentStep = (idx === activeIndex);
-                            if (el.type === 'Latex') return <ElementoLatex key={idx} data={renderData} state={renderState} stepIndex={stepIndex} isCurrentStep={isCurrentStep} onClick={handleJumpToStep} />;
-                            return null;
+                            return (
+                                <ElementoLatex 
+                                    key={idx} 
+                                    data={renderData} 
+                                    state={renderState} 
+                                    stepIndex={stepIndex} 
+                                    isCurrentStep={isCurrentStep} 
+                                    onClick={handleJumpToStep} 
+                                    uniqueScopeId={uniqueScopeId} // PASAMOS EL ID ÚNICO AQUÍ
+                                />
+                            );
                         })}
                     </div>
                 </div>
 
-                {/* --- OVERLAY DESLIZANTE DE RECURSOS (NUEVO) --- */}
+                {/* OVERLAY RECURSOS */}
                 <AnimatePresence>
                     {isResourcesOpen && (
-                        <motion.div
-                            initial={{ x: "100%", opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            exit={{ x: "100%", opacity: 0 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="absolute top-0 right-0 h-full w-[350px] bg-[#0a0a0a]/95 backdrop-blur-md border-l border-neutral-800 shadow-2xl z-50 flex flex-col"
-                        >
+                        <motion.div initial={{ x: "100%", opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: "100%", opacity: 0 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="absolute top-0 right-0 h-full w-[350px] bg-[#0a0a0a]/95 backdrop-blur-md border-l border-neutral-800 shadow-2xl z-50 flex flex-col">
                             <div className="flex justify-between items-center p-4 border-b border-neutral-800">
                                 <h3 className="text-white font-bold flex items-center gap-2"><BookOpen size={18} className="text-[#00ff66]"/> Recursos</h3>
-                                <button onClick={() => setIsResourcesOpen(false)} className="text-neutral-500 hover:text-white p-1 rounded-full hover:bg-white/10 transition">
-                                    <X size={18}/>
-                                </button>
+                                <button onClick={() => setIsResourcesOpen(false)} className="text-neutral-500 hover:text-white p-1 rounded-full hover:bg-white/10 transition"><X size={18}/></button>
                             </div>
-                            
                             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                                <SidebarRecursos 
-                                    resources={scene.resources}
-                                    currentStepIdx={currentStepIdx}
-                                    onResourceClick={(step) => {
-                                        handleJumpToStep(step);
-                                        // Opcional: Cerrar sidebar al hacer clic en móvil, mantener en desktop
-                                        if (window.innerWidth < 768) setIsResourcesOpen(false);
-                                    }}
-                                />
+                                <SidebarRecursos resources={scene.resources} currentStepIdx={currentStepIdx} onResourceClick={(step) => { handleJumpToStep(step); if (window.innerWidth < 768) setIsResourcesOpen(false); }} />
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
-
             </div>
 
-            {/* CONTROLES Y SUBTÍTULOS (Igual que antes) */}
+            {/* CONTROLES Y SUBTÍTULOS */}
             <div className="bg-[#111] border-t border-neutral-800 shrink-0 relative z-20">
                 <AnimatePresence mode='wait'>
                     {currentStepIdx >= 0 && scene.insts[currentStepIdx] && (
@@ -370,12 +414,10 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, onToggleFullscr
                             </div>
                             {onExplainRequest && (
                                 <div className="px-6 pb-3 flex justify-end">
-                                    <button onClick={() => {
-                                        const activeEqIdx = activeIndex !== -1 ? activeIndex : 0;
-                                        const ecActual = scene.cont[activeEqIdx]?.cont || "";
-                                        const ecSiguiente = scene.cont[activeEqIdx + 1]?.cont || ecActual;
-                                        onExplainRequest(currentStepIdx, ecActual, ecSiguiente);
-                                    }} className="flex items-center gap-2 px-3 py-1.5 bg-[#1a1a1a] border border-amber-500/30 text-amber-500 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-amber-500/10 hover:border-amber-500 transition-all group">
+                                    <button 
+                                        onClick={() => setShowExplainModal(true)}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-[#1a1a1a] border border-amber-500/30 text-amber-500 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-amber-500/10 hover:border-amber-500 transition-all group"
+                                    >
                                         <Sparkles size={14} className="group-hover:rotate-12 transition-transform"/> Explicar paso a fondo
                                     </button>
                                 </div>
@@ -384,11 +426,55 @@ const WhiteboardPlayer = ({ scenes, onStepChange, requestedStep, onToggleFullscr
                     )}
                 </AnimatePresence>
             </div>
+            
             <div className="bg-[#0a0a0a] p-4 border-t border-neutral-800 flex items-center justify-center gap-6 z-20 shrink-0">
                 <button onClick={() => { setIsPlaying(false); setCurrentStepIdx(-1); setMaxStepReached(-1); setCollapsedBoxes({}); if(scrollContainerRef.current) scrollContainerRef.current.scrollTop=0; }} className="p-3 text-neutral-500 hover:text-[#00ff66] rounded-full hover:bg-neutral-900 transition"><RefreshCw size={20}/></button>
                 <button onClick={togglePlay} className={`flex items-center gap-3 px-8 py-3 rounded-full font-bold text-black shadow-[0_0_15px_rgba(0,255,102,0.3)] transition-all hover:scale-105 active:scale-95 ${isPlaying ? 'bg-amber-500 shadow-amber-500/30' : 'bg-[#00ff66]'}`}>{isPlaying ? <><Pause fill="black" size={20}/> Pausar</> : <><Play fill="black" size={20}/> {currentStepIdx === -1 ? 'Comenzar' : 'Continuar'}</>}</button>
                 <button onClick={handleSkip} disabled={currentStepIdx >= scene.insts.length - 1} className="p-3 text-neutral-500 hover:text-[#00ff66] hover:bg-neutral-900 rounded-full transition disabled:opacity-30"><SkipForward size={24}/></button>
             </div>
+
+            {/* MODAL PARA ESCRIBIR LA DUDA */}
+            <AnimatePresence>
+                {showExplainModal && (
+                    <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }} 
+                            animate={{ scale: 1, opacity: 1 }} 
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-[#111] border border-neutral-800 p-6 rounded-xl w-full max-w-md shadow-2xl"
+                        >
+                            <h3 className="text-white text-lg font-bold mb-2 flex items-center gap-2">
+                                <Sparkles className="text-amber-500" size={20}/> ¿Qué no entendiste?
+                            </h3>
+                            <p className="text-neutral-400 text-sm mb-4">
+                                Cuéntame qué parte de este paso te confunde para que la IA se enfoque en ello.
+                            </p>
+                            <textarea 
+                                autoFocus
+                                value={userQuery}
+                                onChange={(e) => setUserQuery(e.target.value)}
+                                placeholder="Ej: No entiendo de dónde salió el 4, o por qué cambió el signo..."
+                                className="w-full bg-[#0a0a0a] border border-neutral-700 rounded-lg p-3 text-white text-sm focus:border-amber-500 focus:outline-none min-h-[100px] mb-4"
+                            />
+                            <div className="flex justify-end gap-3">
+                                <button 
+                                    onClick={() => setShowExplainModal(false)}
+                                    className="px-4 py-2 rounded-lg text-neutral-400 hover:bg-neutral-800 font-medium text-sm transition"
+                                >
+                                    Cancelar
+                                </button>
+                                <button 
+                                    onClick={confirmExplanation}
+                                    className="px-4 py-2 rounded-lg bg-amber-500 text-black font-bold text-sm hover:bg-amber-400 transition flex items-center gap-2"
+                                >
+                                    <Sparkles size={16}/> Preguntar a la IA
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 };
