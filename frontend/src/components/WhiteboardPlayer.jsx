@@ -9,15 +9,45 @@ import 'katex/dist/katex.min.css';
 import SidebarRecursos from './SidebarComponent';
 
 // --- 1. FUNCIÓN DE INYECCIÓN DE COLORES ---
+// --- 1. FUNCIÓN DE INYECCIÓN DE COLORES (BLINDADA) ---
 const injectHighlights = (latex, highlights = []) => {
     if (!highlights || highlights.length === 0) return latex;
+
     try {
+        // A. CLONAMOS para no mutar los props originales
+        let safeHighlights = highlights.map(h => ({ ...h }));
+
+        // B. IMÁN DE DELIMITADORES (Smart Expansion)
+        // Si el resaltado empieza en "(", pero antes hay un "\left", 
+        // movemos el inicio para incluir el "\left".
+        safeHighlights.forEach(h => {
+            // 1. Expandir hacia ATRÁS (\left, \big, etc)
+            const textBefore = latex.substring(0, h.start);
+            // Regex: Busca comandos de tamaño al final del string previo
+            const matchLeft = textBefore.match(/\\(left|big|Big|bigg|Bigg)[\s\.]*$/);
+            if (matchLeft) {
+                h.start -= matchLeft[0].length;
+            }
+
+            // 2. Expandir hacia ADELANTE (\right)
+            if (h.end !== 'f') {
+                const textAfter = latex.substring(h.end);
+                // Regex: Busca \right al inicio del texto posterior
+                const matchRight = textAfter.match(/^\s*\\(right|big|Big|bigg|Bigg)/);
+                if (matchRight) {
+                    h.end += matchRight[0].length;
+                }
+            }
+        });
+
+        // C. INYECCIÓN DE COLORES (Tu lógica original optimizada)
         const charColors = new Array(latex.length).fill(null);
-        highlights.forEach(({ start, end, color }) => {
+        safeHighlights.forEach(({ start, end, color }) => {
             const safeStart = Math.max(0, start);
             const safeEnd = end === 'f' ? latex.length : Math.min(latex.length, end);
             for (let i = safeStart; i < safeEnd; i++) charColors[i] = color;
         });
+
         let result = "", currentColor = null, buffer = "";
         for (let i = 0; i < latex.length; i++) {
             const myColor = charColors[i];
@@ -28,8 +58,26 @@ const injectHighlights = (latex, highlights = []) => {
             buffer += latex[i];
         }
         if (buffer.length > 0) result += currentColor ? `\\textcolor{${currentColor}}{${buffer}}` : buffer;
+
+        // D. LIMPIEZA DE EMERGENCIA (El "Parche" final)
+        // Si a pesar de todo, generamos "\left\textcolor", eliminamos el "\left"
+        // KaTeX prefiere paréntesis sin escalar a un error fatal.
+        
+        // 1. Elimina \left si es seguido inmediatamente por un color
+        result = result.replace(/\\left(?=\\textcolor)/g, "");
+        // 2. Elimina \right si es seguido inmediatamente por un color
+        result = result.replace(/\\right(?=\\textcolor)/g, "");
+        
+        // 3. Fix específico para tu error: "\left\textcolor" -> Eliminar "\left"
+        // A veces quedan espacios: "\left  \textcolor"
+        result = result.replace(/\\left\s+(?=\\textcolor)/g, "");
+
         return result;
-    } catch (e) { return latex; }
+
+    } catch (e) {
+        console.error("Error in injectHighlights:", e);
+        return latex; // Fallback: Devuelve latex sin colores si falla algo
+    }
 };
 
 // --- 2. COMPONENTE DE ELEMENTO LATEX (CORREGIDO: BOLA VERDE ESTABLE) ---

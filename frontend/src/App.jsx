@@ -1,14 +1,17 @@
 // src/App.jsx
 import React, { useState, useRef, useEffect } from "react";
+import { FileText, Edit3, ClipboardPaste, ScanSearch, Upload, X } from "lucide-react"; // <--- ICONOS AGREGADOS
+
+// --- COMPONENTES ---
 import MathInput from "./components/MathInput";
-import MathBrowser from "./components/MathBrowser"; // <--- CAMBIO PRINCIPAL: Usamos el Navegador
+import MathBrowser from "./components/MathBrowser";
 import SidebarRecursos from "./components/SidebarComponent";
 import SceneVisualEditor from "./components/SceneVisualEditor";
-import { useMathTutor } from "./hooks/useMathTutor";
-import { FileText, Edit3, ClipboardPaste } from "lucide-react";
-import { parseTextToJSON } from "../utils/textParser";
+import ProblemSelectorModal from "./components/ProblemSelectorModal";
 
-// Utilidades del motor de renderizado
+// --- HOOKS Y UTILIDADES ---
+import { useMathTutor } from "./hooks/useMathTutor";
+import { parseTextToJSON } from "../utils/textParser";
 import { calculateFramePositions } from "../utils/layoutEngine";
 import {
   fixLatexHighlighting,
@@ -22,14 +25,21 @@ function App() {
   const [instructions, setInstructions] = useState("");
   const [file, setFile] = useState(null);
 
-  // Nota: currentStep ahora es gestionado principalmente por cada pestaña del MathBrowser,
-  // pero lo mantenemos aquí para sincronizar el Sidebar externo con la pestaña Principal.
+  // --- ESTADOS DE SELECCIÓN DE PROBLEMAS (MODAL) ---
+  const [detectedProblems, setDetectedProblems] = useState([]);
+  const [showSelector, setShowSelector] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+
+  // --- ESTADOS DE NAVEGACIÓN ---
   const [currentStep, setCurrentStep] = useState(0);
   const [targetStep, setTargetStep] = useState(null);
 
   // --- ESTADOS DE PANTALLA COMPLETA ---
   const playerContainerRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // --- REFERENCIA AL INPUT DE ARCHIVO ---
+  const fileInputRef = useRef(null); // <--- REF PARA EL INPUT OCULTO
 
   // --- ESTADOS DEL EDITOR VISUAL ---
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -40,19 +50,14 @@ function App() {
 
   // --- EFECTO: PANTALLA COMPLETA ---
   useEffect(() => {
-    const handleFullscreenChange = () =>
-      setIsFullscreen(!!document.fullscreenElement);
+    const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () =>
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      if (playerContainerRef.current)
-        playerContainerRef.current
-          .requestFullscreen()
-          .catch((err) => console.log(err));
+      if (playerContainerRef.current) playerContainerRef.current.requestFullscreen().catch((err) => console.log(err));
     } else {
       document.exitFullscreen();
     }
@@ -64,57 +69,108 @@ function App() {
       setEditableSolution(null);
       return;
     }
-
-    // Procesamos layout y física de las flechas
+    // Procesamos layout y física
     const processed = solution.escenas.map((scene) => {
       let p = fixLatexHighlighting(scene);
       p = preventCollisions(p);
       p = calculateArrowPositions(p);
       return calculateFramePositions(p);
     });
-
     setEditableSolution(processed);
   }, [solution]);
 
-  // --- MANEJADORES ---
-  const handleSubmit = () => {
-    solveProblem(latexInput, instructions, file);
-    // Reiniciamos estados de navegación al pedir nuevo problema
-    setTargetStep(null);
-    setCurrentStep(0);
+  // --- MANEJADORES DE LÓGICA ---
+  
+  const resetNavigation = () => {
+      setTargetStep(null);
+      setCurrentStep(0);
   };
 
-  const handleResourceClick = (stepIndex) => {
-    // Al hacer clic en el sidebar externo, queremos mover la pestaña "Principal"
-    setTargetStep(stepIndex);
+  // MANEJO DE ARCHIVOS (NUEVO)
+  const handleFileSelect = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
   };
+
+  const handleClearFile = (e) => {
+    e.stopPropagation();
+    setFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleScanAndSolve = async () => {
+    // 1. Si es solo texto, resolvemos directo
+    if (!file && latexInput) {
+        solveProblem(latexInput, instructions, null);
+        resetNavigation();
+        return;
+    }
+
+    // 2. Si hay archivo, ESCANEAMOS primero
+    if (file) {
+        setIsScanning(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            // Ajusta la URL a tu backend si es necesario
+            const response = await fetch("http://localhost:8000/api/v1/scan_problems", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) throw new Error("Error al escanear el archivo");
+
+            const data = await response.json();
+            
+            if (data.problems && data.problems.length > 1) {
+                // Múltiples problemas -> Abrir Modal
+                setDetectedProblems(data.problems);
+                setShowSelector(true);
+            } else if (data.problems && data.problems.length === 1) {
+                // Un solo problema -> Resolver directo
+                solveProblem(data.problems[0], instructions, null);
+                resetNavigation();
+            } else {
+                // Fallback -> Enviar archivo crudo
+                solveProblem(null, instructions, file);
+                resetNavigation();
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Error al leer el archivo. Intenta de nuevo.");
+        } finally {
+            setIsScanning(false);
+        }
+    }
+  };
+
+  const handleSelectProblem = (problemText) => {
+      setShowSelector(false);
+      solveProblem(problemText, instructions, null); 
+      resetNavigation();
+  };
+
+  const handleResourceClick = (stepIndex) => setTargetStep(stepIndex);
 
   const handleSaveEdits = (editedScene) => {
     const newSolution = [...editableSolution];
     newSolution[0] = calculateFramePositions(editedScene);
     setEditableSolution(newSolution);
     setIsEditorOpen(false);
-    // Forzar reinicio de vista
     setCurrentStep(0);
   };
 
-  // --- IMPORTAR JSON DESDE EL PORTAPAPELES ---
   const handleImportJSON = async () => {
     try {
       const clipboardText = await navigator.clipboard.readText();
       const parsedData = JSON.parse(clipboardText);
-      let sceneToProcess = null;
+      let sceneToProcess = parsedData.escenas ? parsedData.escenas[0] : parsedData;
 
-      if (parsedData.escenas && Array.isArray(parsedData.escenas)) {
-        sceneToProcess = parsedData.escenas[0];
-      } else if (
-        Array.isArray(parsedData.cont) &&
-        Array.isArray(parsedData.insts)
-      ) {
-        sceneToProcess = parsedData;
-      } else {
-        throw new Error("El JSON no tiene el formato de MathPlus.");
-      }
+      if (!sceneToProcess.cont) throw new Error("Formato inválido");
 
       let p = fixLatexHighlighting(sceneToProcess);
       p = preventCollisions(p);
@@ -122,40 +178,96 @@ function App() {
       p = calculateFramePositions(p);
 
       setEditableSolution([p]);
-      setCurrentStep(0);
-      setTargetStep(null);
+      resetNavigation();
     } catch (err) {
       alert("⚠️ Error al importar JSON:\n\n" + err.message);
     }
   };
 
+
+  // --- RENDERIZADO ---
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-neutral-200 p-8 font-sans selection:bg-[#00ff66] selection:text-black relative">
       <header className="max-w-6xl mx-auto mb-8">
         <h1 className="text-4xl font-extrabold text-white tracking-tight">
-          MathPlus{" "}
-          <span className="text-[#00ff66] drop-shadow-[0_0_15px_rgba(0,255,102,0.4)]">
-            Tutor
-          </span>
+          MathPlus <span className="text-[#00ff66] drop-shadow-[0_0_15px_rgba(0,255,102,0.4)]">Tutor</span>
         </h1>
       </header>
 
       <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* =========================================
-            COLUMNA IZQUIERDA: INPUTS Y SIDEBAR 
-            ========================================= */}
+        
+        {/* COLUMNA IZQUIERDA: INPUTS */}
         <div className="lg:col-span-4 space-y-6">
           <div className="bg-[#111] border border-neutral-800 p-6 rounded-xl shadow-2xl space-y-4">
-            <MathInput value={latexInput} onChange={setLatexInput} />
+            
+            {/* Input de Texto Matemático */}
+            <MathInput 
+                value={latexInput} 
+                onChange={setLatexInput} 
+            />
 
-            <button
-              onClick={handleSubmit}
-              disabled={loading || (!latexInput && !file)}
-              className="w-full bg-[#00ff66] text-black font-extrabold py-3 rounded-lg transition-all duration-300 disabled:opacity-30 disabled:bg-neutral-800 disabled:text-neutral-500 hover:bg-[#33ff88] hover:shadow-[0_0_20px_rgba(0,255,102,0.4)] hover:scale-[1.02] active:scale-95"
+            {/* --- ZONA DE CARGA DE ARCHIVOS (NUEVO) --- */}
+            <div 
+              onClick={() => fileInputRef.current.click()}
+              className={`
+                border-2 border-dashed rounded-lg p-4 cursor-pointer transition-all duration-300 flex items-center justify-center gap-3 relative group
+                ${file 
+                  ? 'border-[#00ff66] bg-[#00ff66]/5' 
+                  : 'border-neutral-700 hover:border-neutral-500 hover:bg-neutral-800'
+                }
+              `}
             >
-              {loading ? "Analizando..." : "Explicar Paso a Paso"}
-            </button>
+              <input 
+                ref={fileInputRef}
+                type="file" 
+                accept=".pdf,image/*" 
+                className="hidden" 
+                onChange={handleFileSelect}
+              />
+              
+              {file ? (
+                // Estado: Archivo Seleccionado
+                <>
+                  <FileText className="text-[#00ff66]" size={24} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white truncate">{file.name}</p>
+                    <p className="text-xs text-[#00ff66]">Listo para escanear</p>
+                  </div>
+                  <button 
+                    onClick={handleClearFile}
+                    className="p-1 rounded-full hover:bg-red-500/20 text-neutral-400 hover:text-red-500 transition"
+                  >
+                    <X size={18} />
+                  </button>
+                </>
+              ) : (
+                // Estado: Vacío (Prompt)
+                <>
+                  <Upload className="text-neutral-500 group-hover:text-neutral-300" size={20} />
+                  <span className="text-sm font-medium text-neutral-500 group-hover:text-neutral-300">
+                    Subir PDF o Imagen
+                  </span>
+                </>
+              )}
+            </div>
 
+            {/* Botón Principal */}
+            <button
+              onClick={handleScanAndSolve}
+              disabled={loading || isScanning || (!latexInput && !file)}
+              className="w-full bg-[#00ff66] text-black font-extrabold py-3 rounded-lg transition-all duration-300 disabled:opacity-30 disabled:bg-neutral-800 disabled:text-neutral-500 hover:bg-[#33ff88] hover:shadow-[0_0_20px_rgba(0,255,102,0.4)] active:scale-95 flex items-center justify-center gap-2"
+            >
+              {isScanning ? (
+                  <> <ScanSearch className="animate-pulse" /> Escaneando... </>
+              ) : loading ? (
+                  "Resolviendo..."
+              ) : file ? (
+                  "Escanear y Resolver"
+              ) : (
+                  "Explicar Paso a Paso"
+              )}
+            </button>
+            
             <button
               onClick={handleImportJSON}
               disabled={loading}
@@ -165,23 +277,18 @@ function App() {
             </button>
           </div>
 
-          {/* SIDEBAR DE RECURSOS (Solo para el problema principal) */}
-          {editableSolution &&
-            editableSolution[0]?.resources &&
-            !isFullscreen && (
+          {editableSolution && editableSolution[0]?.resources && !isFullscreen && (
               <SidebarRecursos
                 resources={editableSolution[0].resources}
                 currentStepIdx={currentStep}
                 onResourceClick={handleResourceClick}
               />
-            )}
+          )}
         </div>
 
-        {/* =========================================
-            COLUMNA DERECHA: MATH BROWSER (NAVEGADOR)
-            ========================================= */}
+        {/* COLUMNA DERECHA: MATH BROWSER */}
         <div className="lg:col-span-8 h-[650px] flex flex-col relative">
-          {/* BOTÓN EDITAR (MODO PROFESOR) */}
+          
           {editableSolution && !isFullscreen && (
             <div className="absolute -top-12 right-0 z-10">
               <button
@@ -194,37 +301,26 @@ function App() {
           )}
 
           {!editableSolution ? (
-            /* ESTADO: CARGANDO O VACÍO */
             <div className="flex-grow flex items-center justify-center bg-[#111] rounded-xl shadow-2xl border border-neutral-800">
               {loading ? (
                 <div className="text-center text-neutral-400">
                   <div className="animate-spin w-12 h-12 border-4 border-[#00ff66] border-t-transparent rounded-full mx-auto mb-4 drop-shadow-[0_0_10px_rgba(0,255,102,0.5)]"></div>
-                  <h3 className="text-lg font-bold text-white tracking-wide">
-                    Generando Pizarra...
-                  </h3>
-                  <p className="text-sm mt-2 text-neutral-500">
-                    La IA está estructurando la explicación visual
-                  </p>
+                  <h3 className="text-lg font-bold text-white tracking-wide">Generando Pizarra...</h3>
+                  <p className="text-sm mt-2 text-neutral-500">La IA está estructurando la explicación visual</p>
                 </div>
               ) : (
                 <div className="text-center text-neutral-600">
                   <FileText size={64} className="mx-auto mb-4 opacity-20" />
-                  <h3 className="text-lg font-medium text-neutral-400">
-                    Tutor Virtual Listo
-                  </h3>
-                  <p className="text-sm mt-1">
-                    Sube una foto o escribe una ecuación para empezar.
-                  </p>
+                  <h3 className="text-lg font-medium text-neutral-400">Tutor Virtual Listo</h3>
+                  <p className="text-sm mt-1">Sube una foto o escribe una ecuación para empezar.</p>
                 </div>
               )}
             </div>
           ) : (
-            /* ESTADO: NAVEGADOR DE MATEMÁTICAS */
             <div
               ref={playerContainerRef}
-              className={
-                isFullscreen
-                  ? "fixed inset-0 z-[100] bg-[#0a0a0a] flex w-screen h-screen"
+              className={isFullscreen 
+                  ? "fixed inset-0 z-[100] bg-[#0a0a0a] flex w-screen h-screen" 
                   : "h-full w-full relative flex flex-col rounded-xl overflow-hidden border border-neutral-800 shadow-2xl"
               }
             >
@@ -232,7 +328,6 @@ function App() {
                 <MathBrowser
                   key={editableSolution[0].ig || Date.now()}
                   initialScene={editableSolution[0]}
-                  // AGREGAR ESTAS DOS LÍNEAS:
                   onToggleFullscreen={toggleFullscreen}
                   isFullscreen={isFullscreen}
                 />
@@ -242,9 +337,17 @@ function App() {
         </div>
       </main>
 
-      {/* =========================================
-          MODAL: EDITOR VISUAL DEL JSON
-          ========================================= */}
+      {/* --- MODALES --- */}
+      
+      {/* 1. Selector de Problemas */}
+      <ProblemSelectorModal 
+          isOpen={showSelector}
+          problems={detectedProblems}
+          onSelect={handleSelectProblem}
+          onCancel={() => setShowSelector(false)}
+      />
+
+      {/* 2. Editor Visual */}
       {isEditorOpen && editableSolution && (
         <SceneVisualEditor
           sceneData={editableSolution[0]}

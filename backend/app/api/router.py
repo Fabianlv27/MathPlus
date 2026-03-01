@@ -1,18 +1,43 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
-from app.models.schemas import ExplainRequest, SolucionMath
+from app.models.schemas import DetectedProblemsResponse, ExplainRequest, SolucionMath
 from app.agents.graph import app_graph
 from app.services.ocr import extract_text_from_pdf
 from app.services.pdf_gen import generate_solution_pdf
 from app.data.default import default,default4
 from app.services.sanitazer import sanitize_latex_highlights
 from app.services.JsonParser import parse_text_to_json
-from app.agents.Explainator import Explainer
+from app.services.ProblemSplitterAI import split_problems_with_ai
+
 router = APIRouter()
 
+@router.post("/scan_problems", response_model=DetectedProblemsResponse)
+async def scan_problems_from_file(file: UploadFile = File(...)):
+    """
+    Recibe PDF o Imagen y usa IA Vision para detectar ejercicios.
+    """
+    try:
+        content = await file.read()
+        mime_type = file.content_type
+
+        # Validamos formatos soportados por Gemini
+        if mime_type not in ["application/pdf", "image/jpeg", "image/png", "image/webp"]:
+            raise HTTPException(400, "Formato no soportado. Usa PDF, JPG o PNG.")
+
+        # LLAMADA A LA IA
+        detected_problems = split_problems_with_ai(content, mime_type)
+        
+        if not detected_problems:
+            return {"problems": ["No pudimos detectar ejercicios claros. Intenta recortar la imagen."]}
+
+        return {"problems": detected_problems}
+
+    except Exception as e:
+        print(f"Error procesando archivo: {e}")
+        raise HTTPException(500, "Error interno al procesar el documento con IA.")
 
 
-@router.post("/solve",response_model=SolucionMath)
+
 async def default_json_problem():
     json_res=parse_text_to_json(default4)
     return json_res
@@ -34,7 +59,7 @@ async def explain_step_deeply(req: ExplainRequest):
 async def defoult_solve_problem():
     return {"escenas":[sanitize_latex_highlights(default4)]}
 
-
+@router.post("/solve",response_model=SolucionMath)
 async def solve_problem(
     query: str = Form(None), 
     file: UploadFile = File(None)

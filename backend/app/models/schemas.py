@@ -56,3 +56,9 @@ class ExplainRequest(BaseModel):
     before_tex: str  # La ecuación antes del paso
     after_tex: str   # La ecuación después del paso
     context: str
+    
+class DetectedProblemsResponse(BaseModel):
+    problems: List[str]
+    
+class ProblemList(BaseModel):
+    problems: List[str] = Field(description="Lista de los enunciados de los problemas matemáticos extraídos.")
