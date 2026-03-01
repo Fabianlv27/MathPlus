@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, TypedDict
 
 class PasoAnimacion(BaseModel):
     texto_voz: str = Field(description="Texto narrativo para el audio")
@@ -62,3 +62,12 @@ class DetectedProblemsResponse(BaseModel):
     
 class ProblemList(BaseModel):
     problems: List[str] = Field(description="Lista de los enunciados de los problemas matemáticos extraídos.")
+    
+class AgentState(TypedDict):
+    user_input: str
+    is_valid_math: bool
+    solution_raw: str
+    structured_solution: str
+    final_json: dict
+    req:dict
+    explain:bool

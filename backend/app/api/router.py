@@ -1,5 +1,8 @@
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
+from lief import Header
 from app.models.schemas import DetectedProblemsResponse, ExplainRequest, SolucionMath
 from app.agents.graph import app_graph
 from app.services.ocr import extract_text_from_pdf
@@ -12,10 +15,12 @@ from app.services.ProblemSplitterAI import split_problems_with_ai
 router = APIRouter()
 
 @router.post("/scan_problems", response_model=DetectedProblemsResponse)
-async def scan_problems_from_file(file: UploadFile = File(...)):
+async def scan_problems_from_file(file: UploadFile = File(...),x_gemini_key:Optional[str]=Header(None,alias="x-gemini-key")):
     """
     Recibe PDF o Imagen y usa IA Vision para detectar ejercicios.
     """
+    if not x_gemini_key:
+        raise HTTPException(400, "Falta la API Key de Gemini. Configúrala en Ajustes.")
     try:
         content = await file.read()
         mime_type = file.content_type
@@ -24,8 +29,7 @@ async def scan_problems_from_file(file: UploadFile = File(...)):
         if mime_type not in ["application/pdf", "image/jpeg", "image/png", "image/webp"]:
             raise HTTPException(400, "Formato no soportado. Usa PDF, JPG o PNG.")
 
-        # LLAMADA A LA IA
-        detected_problems = split_problems_with_ai(content, mime_type)
+        detected_problems = split_problems_with_ai(content, mime_type,api_key=x_gemini_key)
         
         if not detected_problems:
             return {"problems": ["No pudimos detectar ejercicios claros. Intenta recortar la imagen."]}
@@ -43,13 +47,17 @@ async def default_json_problem():
     return json_res
 
 @router.post("/explain_step")
-async def explain_step_deeply(req: ExplainRequest):
+async def explain_step_deeply(req: ExplainRequest,x_gemini_key:Optional[str]=Header(None,alias="x-gemini-key"),x_groq_key:Optional[str]=Header(None,alias="x-groq-key")):
+    
+    api_keys={"gemini":x_gemini_key,"groq":x_groq_key}
+    
     initial_state = {
         "user_input": "", 
         "is_valid_math": False,
         "solution_raw": "", 
         "structured_solution": "",
         "final_json": {},
+        "api_keys": api_keys,
         "req": req,
         "explain": True
     }
@@ -62,7 +70,9 @@ async def defoult_solve_problem():
 @router.post("/solve",response_model=SolucionMath)
 async def solve_problem(
     query: str = Form(None), 
-    file: UploadFile = File(None)
+    file: UploadFile = File(None),
+    x_gemini_key: Optional[str] = Header(None, alias="x-gemini-key"),
+    x_groq_key: Optional[str] = Header(None, alias="x-groq-key")
 ):
     user_input = ""
     
@@ -85,6 +95,10 @@ async def solve_problem(
         "solution_raw": "", 
         "structured_solution": "",
         "final_json": {},
+        "api_keys": {
+            "gemini": x_gemini_key,
+            "groq": x_groq_key
+        },
         "req": None,
         "explain": False
     }

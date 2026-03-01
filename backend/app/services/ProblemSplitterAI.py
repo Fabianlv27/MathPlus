@@ -6,19 +6,12 @@ from typing import List
 
 from app.models.schemas import ProblemList
 
-# Asegúrate de que la API KEY esté en tus variables de entorno
-# os.environ["GOOGLE_API_KEY"] = "TU_API_KEY"
-
-# Definimos el esquema de salida usando Pydantic (es nativo en el nuevo SDK)
-
-
-def split_problems_with_ai(file_content: bytes, mime_type: str) -> List[str]:
-    api_key = os.environ.get("GEMINI_API_KEY")
+def split_problems_with_ai(file_content: bytes, mime_type: str,api_key:str) -> List[str]:
+ 
     if not api_key:
         print("Error: GEMINI_API_KEY no encontrada.")
         return []
 
-    # 1. Inicializamos el Cliente (La nueva forma)
     client = genai.Client(api_key=api_key)
 
     prompt_text = """
